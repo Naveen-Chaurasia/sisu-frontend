@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://web-production-c3591.up.railway.app/api/:path*"
+    },
+    {
+      "source": "/v2/:path*",
+      "destination": "https://web-production-c3591.up.railway.app/v2/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
