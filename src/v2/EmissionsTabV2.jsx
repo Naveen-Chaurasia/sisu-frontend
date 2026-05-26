@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { SECTOR_ICON_MAP } from "./Icons";
 import {
   AreaChart, Area, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie,
@@ -51,6 +52,90 @@ const IPPU_SUBCAT_COLORS = {
   pfcs:        "#06b6d4",
   n2o:         "#a3e635",
   sf6:         "#fbbf24",
+};
+
+const DETAIL_LABELS = {
+  rice: "Rice", cereals: "Cereals", fruits: "Fruits",
+  vegetables_and_vines: "Vegetables & Vines", sugar_cane: "Sugar Cane",
+  nuts: "Nuts", pulses: "Pulses", fibers: "Fibers",
+  tubers: "Tubers", other_annual: "Other Annual",
+  other_woody_perennial: "Other Woody Perennial",
+  herbs_and_other_perennial_crops: "Herbs & Perennials",
+  bevs_and_spices: "Beverages & Spices",
+  buffalo: "Buffalo", cattle_dairy: "Dairy Cattle",
+  cattle_nondairy: "Beef Cattle", chickens: "Chickens",
+  goats: "Goats", horses: "Horses", mules: "Mules",
+  pigs: "Pigs", sheep: "Sheep",
+  anaerobic_digester: "Anaerobic Digester", lagoon: "Lagoon",
+  composting: "Composting", dry_lot: "Dry Lot",
+  deep_bedding: "Deep Bedding", biodigester: "Biodigester",
+  solid_storage: "Solid Storage", pasture: "Pasture Range",
+  daily_spread: "Daily Spread",
+  synthetic_fertilizer: "Synthetic Fertilizer",
+  organic_amendments: "Organic Amendments",
+  rice_fields: "Rice Fields", liming: "Liming", urea: "Urea",
+  food: "Food Waste", paper: "Paper", plastic: "Plastics",
+  glass: "Glass", metal: "Metal", nappies: "Nappies",
+  textiles: "Textiles", wood: "Wood",
+  rubber_leather: "Rubber & Leather",
+  chemical_industrial: "Chemical/Industrial",
+  sludge: "Sludge", yard: "Yard Waste",
+  domestic_rural: "Rural Domestic", domestic_urban: "Urban Domestic",
+  industrial: "Industrial Effluent",
+  croplands: "Croplands", forests: "Forests",
+  grasslands: "Grasslands", wetlands: "Wetlands", settlements: "Settlements",
+  // scoe – building types
+  residential: "Residential", commercial_municipal: "Commercial & Municipal", other_se: "Other Buildings",
+  // entc – power generation technologies
+  pp_coal: "Coal Power", pp_gas: "Natural Gas Power", pp_hydropower: "Hydropower",
+  pp_solar: "Solar", pp_wind: "Wind", pp_nuclear: "Nuclear",
+  pp_oil: "Oil Power", pp_biomass: "Biomass", pp_geothermal: "Geothermal",
+  pp_biogas: "Biogas", pp_coal_ccs: "Coal + CCS", pp_gas_ccs: "Gas + CCS",
+  pp_waste_incineration: "Waste Incineration", pp_ocean: "Ocean Energy",
+  // fgtv – fuel types for fugitive emissions
+  fuel_coal: "Coal", fuel_crude: "Crude Oil",
+  fuel_natural_gas: "Natural Gas", fuel_oil: "Oil Products",
+};
+
+const DETAIL_COLORS = {
+  rice: "#84cc16", cereals: "#a3e635", fruits: "#f97316",
+  vegetables_and_vines: "#22c55e", sugar_cane: "#fbbf24",
+  nuts: "#d97706", pulses: "#65a30d", fibers: "#15803d",
+  tubers: "#ca8a04", other_annual: "#4ade80",
+  other_woody_perennial: "#166534",
+  herbs_and_other_perennial_crops: "#86efac",
+  bevs_and_spices: "#fde68a",
+  buffalo: "#78350f", cattle_dairy: "#f59e0b",
+  cattle_nondairy: "#b45309", chickens: "#fcd34d",
+  goats: "#d97706", horses: "#92400e", mules: "#a16207",
+  pigs: "#fb923c", sheep: "#fef08a",
+  anaerobic_digester: "#06b6d4", lagoon: "#0891b2",
+  composting: "#65a30d", dry_lot: "#a3a3a3",
+  deep_bedding: "#78716c", biodigester: "#22d3ee",
+  solid_storage: "#94a3b8", pasture: "#4ade80",
+  daily_spread: "#86efac",
+  synthetic_fertilizer: "#f43f5e", organic_amendments: "#fb923c",
+  rice_fields: "#84cc16", liming: "#cbd5e1", urea: "#fca5a5",
+  food: "#8b5cf6", paper: "#a78bfa", plastic: "#6d28d9",
+  glass: "#c4b5fd", metal: "#94a3b8", nappies: "#f9a8d4",
+  textiles: "#ec4899", wood: "#92400e",
+  rubber_leather: "#78350f", chemical_industrial: "#ef4444",
+  sludge: "#64748b", yard: "#22c55e",
+  domestic_rural: "#818cf8", domestic_urban: "#6366f1",
+  industrial: "#4338ca",
+  croplands: "#fbbf24", forests: "#16a34a",
+  grasslands: "#84cc16", wetlands: "#0ea5e9", settlements: "#94a3b8",
+  // scoe
+  residential: "#f97316", commercial_municipal: "#fb923c", other_se: "#fdba74",
+  // entc
+  pp_coal: "#374151", pp_gas: "#6b7280", pp_hydropower: "#0ea5e9",
+  pp_solar: "#fbbf24", pp_wind: "#38bdf8", pp_nuclear: "#8b5cf6",
+  pp_oil: "#78350f", pp_biomass: "#15803d", pp_geothermal: "#dc2626",
+  pp_biogas: "#65a30d", pp_coal_ccs: "#4b5563", pp_gas_ccs: "#9ca3af",
+  pp_waste_incineration: "#a16207", pp_ocean: "#0284c7",
+  // fgtv
+  fuel_coal: "#1c1917", fuel_crude: "#292524",
+  fuel_natural_gas: "#44403c", fuel_oil: "#57534e",
 };
 
 const MODE_LABELS = {
@@ -172,6 +257,22 @@ const SECTOR_SCOPE_SUBSECTORS = {
   industrial: { scope1: ["ippu"] },
 };
 
+// 30-color palette: maximally distinct, cycles through hue/saturation combos
+const VIBRANT_PALETTE = [
+  "#e63946", "#f4845f", "#f7c59f", "#2a9d8f", "#52b788",
+  "#74c69d", "#1d7dc1", "#4895ef", "#90e0ef", "#7b2d8b",
+  "#c77dff", "#e0aaff", "#ff6b35", "#ffd166", "#06d6a0",
+  "#118ab2", "#073b4c", "#d62828", "#f77f00", "#fcbf49",
+  "#eae2b7", "#003049", "#8338ec", "#3a86ff", "#fb5607",
+  "#ffbe0b", "#43aa8b", "#577590", "#f94144", "#90be6d",
+];
+
+function getVibrantColor(key, index) {
+  if (DETAIL_COLORS[key]) return DETAIL_COLORS[key];
+  if (IPPU_SUBCAT_COLORS[key]) return IPPU_SUBCAT_COLORS[key];
+  // Use sequential index so every slot gets a unique, well-spaced color
+  return VIBRANT_PALETTE[index % VIBRANT_PALETTE.length];
+}
 function fmt(n, dp = 1) {
   if (n === undefined || n === null || isNaN(n)) return "—";
   if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(dp) + "M";
@@ -186,10 +287,11 @@ function Spinner({ size = 20 }) {
   );
 }
 
-function ModeBreakdownTooltip({ active, payload, label, unit }) {
+function ModeBreakdownTooltip({ active, payload, label, unit, modeLabel }) {
   if (!active || !payload?.length) return null;
   const entries = payload.filter(p => p.value > 0).sort((a, b) => b.value - a.value);
   const total = entries.reduce((s, p) => s + p.value, 0);
+  const getLabel = k => modeLabel ? modeLabel(k) : (MODE_LABELS[k] || SUBSECTOR_LABELS[k] || k);
   return (
     <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10,
       padding: "10px 14px", fontSize: 12, boxShadow: "0 4px 16px rgba(0,0,0,0.1)", minWidth: 210 }}>
@@ -199,9 +301,9 @@ function ModeBreakdownTooltip({ active, payload, label, unit }) {
           marginBottom: 3, alignItems: "center" }}>
           <span style={{ display: "flex", alignItems: "center", gap: 5, color: "#475569" }}>
             <span style={{ width: 8, height: 8, borderRadius: 2,
-              background: MODE_COLORS[p.dataKey] || p.fill || "#94a3b8",
+              background: p.fill || "#94a3b8",
               flexShrink: 0, display: "inline-block" }} />
-            {MODE_LABELS[p.dataKey] || p.dataKey}
+            {getLabel(p.dataKey)}
           </span>
           <strong style={{ color: "#0f172a" }}>{fmt(p.value, 1)} {unit}</strong>
         </div>
@@ -215,6 +317,199 @@ function ModeBreakdownTooltip({ active, payload, label, unit }) {
   );
 }
 
+function CategoryBreakdownChart({ byDetail, byMode, scopeSeries, selIdx, selYear, unit }) {
+  if (!byDetail || Object.keys(byDetail).length === 0) return null;
+
+  // UPDATED: Use the new vibrant color helper
+  const catColor = (c, idx) => c === "__others__" ? "#94a3b8" : getVibrantColor(c, idx);
+  const catLabel = c => c === "__others__" ? "Others" : (DETAIL_LABELS[c] || IPPU_SUBCAT_LABELS[c] ||
+    c.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()));
+
+  const hasScopeData = scopeSeries && scopeSeries.length > 0 && byMode;
+  let barData;
+
+  if (hasScopeData) {
+    // Rows = scopes, stacked by fine-grained category
+    barData = scopeSeries.map(s => {
+      const row = { name: s.label };
+      const scopeSubs = Object.keys(byMode[s.key] || {});
+      scopeSubs.forEach(sub => {
+        const cats = byDetail[sub];
+        if (!cats) return;
+        // Anchor to the known subsector total from byMode to prevent double-counting
+        const subSeries = byMode[s.key][sub];
+        const subTotal = Array.isArray(subSeries) ? Math.max(0, subSeries[selIdx] ?? 0) : 0;
+        const rawSum = Object.values(cats).reduce((acc, ser) => acc + Math.max(0, ser[selIdx] ?? 0), 0);
+        Object.entries(cats).forEach(([cat, ser]) => {
+          const raw = Math.max(0, ser[selIdx] ?? 0);
+          const val = rawSum > 0 ? (raw / rawSum) * subTotal : 0;
+          row[cat] = (row[cat] || 0) + val;
+        });
+      });
+      return row;
+    }).filter(row =>
+      Object.entries(row).some(([k, v]) => k !== "name" && v > 0)
+    );
+  } else {
+    // Fallback: one row per subsector
+    barData = Object.entries(byDetail).map(([sub, cats]) => {
+      const row = { name: SUBSECTOR_LABELS[sub] || sub };
+      Object.entries(cats).forEach(([cat, series]) => {
+        row[cat] = Math.max(0, series[selIdx] ?? 0);
+      });
+      return row;
+    }).filter(row => Object.keys(row).some(k => k !== "name" && (row[k] || 0) > 0));
+  }
+
+  if (barData.length === 0) return null;
+
+  // UPDATED: Sort categories by total value for a cleaner look
+  const allCats = [...new Set(
+    barData.flatMap(row => Object.keys(row).filter(k => k !== "name"))
+  )];
+  
+  const sortedCats = allCats.sort((a, b) => {
+    const totalA = barData.reduce((sum, row) => sum + (row[a] || 0), 0);
+    const totalB = barData.reduce((sum, row) => sum + (row[b] || 0), 0);
+    return totalB - totalA;
+  });
+
+  const MAX_CATS = 24;
+  const allActiveCats = sortedCats.filter(cat => barData.some(row => (row[cat] || 0) > 0));
+  const topCats = allActiveCats.slice(0, MAX_CATS);
+  const restCats = allActiveCats.slice(MAX_CATS);
+
+  // Merge overflow categories into "others"
+  let activeCats = topCats;
+  if (restCats.length > 0) {
+    activeCats = [...topCats, "__others__"];
+    barData = barData.map(row => {
+      const othersVal = restCats.reduce((sum, cat) => sum + (row[cat] || 0), 0);
+      const next = { ...row };
+      restCats.forEach(cat => delete next[cat]);
+      if (othersVal > 0) next.__others__ = othersVal;
+      return next;
+    });
+  }
+
+  const chartHeight = Math.max(120, barData.length * 52 + 60);
+  const chartSubtitle = hasScopeData
+    ? `Each bar = one scope · stacked by fine-grained category · ${unit}`
+    : `Each bar = one subsector · stacked by fine-grained category · ${unit}`;
+
+  return (
+    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16,
+      padding: "20px 22px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 700, color: "#0f172a" }}>
+          Category Breakdown — {selYear}
+        </div>
+        <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>
+          {chartSubtitle}
+        </div>
+      </div>
+
+      <ResponsiveContainer width="100%" height={chartHeight}>
+        <BarChart data={barData} layout="vertical"
+          margin={{ top: 4, right: 24, left: 8, bottom: 26 }} barSize={28}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={true} horizontal={false} />
+          <XAxis type="number" tick={{ fill: "#94a3b8", fontSize: 10.5 }}
+            tickLine={false} axisLine={false} tickFormatter={v => fmt(v, 1)}
+            label={{ value: `Emissions (${unit})`, position: "insideBottom", offset: -12,
+              fill: "#94a3b8", fontSize: 10.5 }} />
+          <YAxis type="category" dataKey="name" width={160}
+            tick={{ fill: "#334155", fontSize: 11, fontWeight: 600 }}
+            tickLine={false} axisLine={false} />
+          <Tooltip
+            content={({ active, payload, label }) => {
+              if (!active || !payload?.length) return null;
+              const entries = payload.filter(p => p.value > 0).sort((a, b) => b.value - a.value);
+              const total = entries.reduce((s, p) => s + p.value, 0);
+              return (
+                <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10,
+                  padding: "10px 14px", fontSize: 12, boxShadow: "0 4px 16px rgba(0,0,0,0.1)", minWidth: 220 }}>
+                  <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 7, fontSize: 13 }}>{label}</div>
+                  {entries.map(p => (
+                    <div key={p.dataKey} style={{ display: "flex", justifyContent: "space-between",
+                      gap: 14, marginBottom: 3, alignItems: "center" }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: 5, color: "#475569" }}>
+                        <span style={{ width: 8, height: 8, borderRadius: 2,
+                          background: p.fill || "#94a3b8", flexShrink: 0, display: "inline-block" }} />
+                        {catLabel(p.dataKey)}
+                      </span>
+                      <strong style={{ color: "#0f172a" }}>{fmt(p.value, 1)} {unit}</strong>
+                    </div>
+                  ))}
+                  <div style={{ borderTop: "1px solid #f1f5f9", marginTop: 6, paddingTop: 6,
+                    display: "flex", justifyContent: "space-between", fontWeight: 700, color: "#0f172a" }}>
+                    <span>Total</span><span>{fmt(total, 1)} {unit}</span>
+                  </div>
+                </div>
+              );
+            }}
+            cursor={{ fill: "rgba(30,112,147,0.05)" }}
+          />
+          {/* UPDATED: Pass index to catColor */}
+          {activeCats.map((cat, index) => (
+            <Bar 
+              key={cat} 
+              dataKey={cat} 
+              stackId="a" 
+              fill={catColor(cat, index)} 
+            />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+
+      {/* Legend — grouped by scope when scope data is available */}
+      {hasScopeData ? (() => {
+        const catToScope = {};
+        ["scope1", "scope2", "scope3"].forEach(sk => {
+          Object.keys(byMode[sk] || {}).forEach(sub => {
+            Object.keys(byDetail[sub] || {}).forEach(cat => { catToScope[cat] = sk; });
+          });
+        });
+        const scopeColors = { scope1: "#ef4444", scope2: "#3b82f6", scope3: "#f59e0b" };
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
+            {["scope1", "scope2", "scope3"].map(sk => {
+              const scopeCats = activeCats.filter(cat => catToScope[cat] === sk);
+              if (!scopeCats.length) return null;
+              const sm = scopeSeries?.find(s => s.key === sk);
+              return (
+                <div key={sk}>
+                  <div style={{ fontSize: 10.5, fontWeight: 700, color: scopeColors[sk],
+                    textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 5 }}>
+                    {sm?.label || sk}
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px" }}>
+                    {scopeCats.map(cat => (
+                      <div key={cat} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11 }}>
+                        <div style={{ width: 10, height: 10, borderRadius: 2,
+                          background: catColor(cat, activeCats.indexOf(cat)), flexShrink: 0 }} />
+                        <span style={{ color: "#64748b" }}>{catLabel(cat)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })() : (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "5px 14px", marginTop: 14 }}>
+          {activeCats.map((cat, index) => (
+            <div key={cat} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11 }}>
+              <div style={{ width: 10, height: 10, borderRadius: 2,
+                background: catColor(cat, index), flexShrink: 0 }} />
+              <span style={{ color: "#64748b" }}>{catLabel(cat)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 function SectorScopeCard({ scopeKey, values, info, subsectorKeys, modeData, bySubData, detailData, selIdx, selYear, unit, expanded, onToggle }) {
   const sm = SCOPE_META[scopeKey];
   if (!sm) return null;
@@ -385,36 +680,15 @@ function SectorScopeCard({ scopeKey, values, info, subsectorKeys, modeData, bySu
   );
 }
 
-function SectorDropdown({ sectors, value, onChange, loading }) {
-  return (
-    <div>
-      <div style={{ fontSize: 10, fontWeight: 700, color: "#1a6585", textTransform: "uppercase",
-        letterSpacing: 0.7, marginBottom: 6 }}>Sector</div>
-      <select value={value} onChange={e => onChange(e.target.value)} disabled={loading}
-        style={{ fontSize: 13, padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0",
-          background: "#f8fafc", color: "#0f172a", fontFamily: "inherit", cursor: "pointer",
-          minWidth: 200 }}>
-        {sectors.map(s => (
-          <option key={s.sector} value={s.sector}>
-            {s.icon} {s.label} ({s.policy_count} policies)
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-export default function EmissionsTabV2({ region, gas, unit }) {
-  const [sectors,  setSectors]  = useState([]);
-  const [sector,   setSector]   = useState("transport");
-  const [data,     setData]     = useState(null);
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState(null);
-  const [selIdx,        setSelIdx]        = useState(0);
+export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDataLoaded }) {
+  const [sectors,       setSectors]       = useState([]);
+  const [data,          setData]          = useState(null);
+  const [loading,       setLoading]       = useState(false);
+  const [error,         setError]         = useState(null);
   const [expandedScopes, setExpandedScopes] = useState({});
   const reportRef = useRef(null);
 
-  // Load sectors list once
+  // Load sectors list (for metadata only)
   useEffect(() => {
     fetchSectors().then(d => setSectors(d.sectors || [])).catch(() => {});
   }, []);
@@ -423,7 +697,10 @@ export default function EmissionsTabV2({ region, gas, unit }) {
   useEffect(() => {
     setLoading(true); setError(null); setData(null);
     fetchSectorBaseline(sector, region, gas)
-      .then(d => { setData(d); setSelIdx(Math.max(0, (d.years?.length || 1) - 1)); })
+      .then(d => {
+        setData(d);
+        onDataLoaded?.(d.years || []);
+      })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
   }, [sector, region, gas]);
@@ -437,17 +714,27 @@ export default function EmissionsTabV2({ region, gas, unit }) {
   const total = data?.total || [];
   const totalFinal = total[selIdx] ?? 0;
 
-  // Use scope 1/2/3 series whenever the backend returns them (transport, energy, industrial)
-  const hasScopes = !!(data?.scope1 && data?.scope2);
+  // Scope labels vary by sector
+  const SCOPE_LABELS = {
+    transport:   { scope1: "Scope 1 · Direct Combustion", scope2: "Scope 2 · Electricity", scope3: "Scope 3 · Upstream Fuel" },
+    energy:      { scope1: "Scope 1 · Stationary Combustion", scope2: "Scope 2 · Power Generation", scope3: "Scope 3 · Fugitive" },
+    industrial:  { scope1: "Scope 1 · Industrial Processes", scope2: "Scope 2 · Electricity", scope3: "Scope 3 · Upstream" },
+    agriculture: { scope1: "Scope 1 · Agriculture & Livestock", scope2: "Scope 2 · Energy Use", scope3: "Scope 3 · Land Use Change" },
+    waste:       { scope1: "Scope 1 · Waste Disposal", scope2: "Scope 2 · Energy", scope3: "Scope 3 · Industrial Wastewater" },
+  };
+  const sectorScopeLabels = SCOPE_LABELS[sector] || { scope1: "Scope 1 · Direct", scope2: "Scope 2 · Electricity", scope3: "Scope 3 · Upstream" };
+
+  // Show scopes whenever the backend returns scope1 (all sectors now have scope maps)
+  const hasScopes = !!(data?.scope1);
   const scopeSeries = hasScopes
     ? [
-        { key: "scope1", label: "Scope 1 · Direct",       color: "#ef4444", data: data?.scope1 || [] },
-        { key: "scope2", label: "Scope 2 · Electricity",  color: "#3b82f6", data: data?.scope2 || [] },
-        { key: "scope3", label: "Scope 3 · Upstream",     color: "#f59e0b", data: data?.scope3 || [] },
-      ].filter(s => s.data.some(v => v > 0))  // hide scopes with no data (e.g. industrial Scope 2/3)
+        { key: "scope1", label: sectorScopeLabels.scope1, color: "#ef4444", data: data?.scope1 || [] },
+        { key: "scope2", label: sectorScopeLabels.scope2, color: "#3b82f6", data: data?.scope2 || [] },
+        { key: "scope3", label: sectorScopeLabels.scope3, color: "#f59e0b", data: data?.scope3 || [] },
+      ].filter(s => s.data.some(v => v > 0))  // hide scopes with zero data
     : null;
 
-  // Subsector series fallback for sectors without scope breakdown (agriculture, waste)
+  // Subsector series fallback only if no scopes at all
   const subSeries = !hasScopes && data?.by_sub
     ? Object.entries(data.by_sub).map(([key, vals], i) => ({
         key,
@@ -486,12 +773,23 @@ export default function EmissionsTabV2({ region, gas, unit }) {
     })),
   ];
 
-  // Mode breakdown — any sector where backend returns by_mode (currently only transport)
+  // Mode / subsector breakdown — all sectors now return by_mode
   const byModeData  = data?.by_mode ?? null;
-  const allModes    = byModeData ? Object.keys(byModeData.scope1 || {}) : [];
+  const isTransport = sector === "transport";
+  // Collect all sub-keys across every scope (some scopes may be empty for non-transport)
+  const allModes = byModeData
+    ? [...new Set(["scope1", "scope2", "scope3"].flatMap(sk => Object.keys(byModeData[sk] || {})))]
+    : [];
   const activeModes = allModes.filter(m =>
     ["scope1", "scope2", "scope3"].some(sk => (byModeData?.[sk]?.[m]?.[selIdx] ?? 0) > 0)
   );
+  // Color + label lookup depending on sector type
+  const modeColor = m => isTransport
+    ? (MODE_COLORS[m]     || SUBSECTOR_COLORS[m] || "#94a3b8")
+    : (SUBSECTOR_COLORS[m] || MODE_COLORS[m]     || "#94a3b8");
+  const modeLabel = m => isTransport
+    ? (MODE_LABELS[m]     || SUBSECTOR_LABELS[m] || m)
+    : (SUBSECTOR_LABELS[m] || MODE_LABELS[m]     || m);
   const modeBarData = byModeData
     ? (scopeSeries || []).map(s => {
         const row = { name: s.label };
@@ -529,26 +827,6 @@ export default function EmissionsTabV2({ region, gas, unit }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
-      {/* Controls row */}
-      <div style={{ display: "flex", gap: 14, alignItems: "flex-end", flexWrap: "wrap" }}>
-        <SectorDropdown sectors={sectors} value={sector} onChange={setSector} loading={loading} />
-
-        {/* Year slider */}
-        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12,
-          padding: "10px 14px", minWidth: 180 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: "#1a6585", textTransform: "uppercase", letterSpacing: 0.7 }}>Timeline</span>
-            <span style={{ fontSize: 13, fontWeight: 800, color: "#0f172a" }}>{selYear}</span>
-          </div>
-          <input type="range" min={0} max={Math.max(0, n - 1)} step={1} value={selIdx}
-            onChange={e => setSelIdx(+e.target.value)}
-            style={{ width: "100%", accentColor: "#1e7093" }} />
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#94a3b8", marginTop: 2 }}>
-            <span>{years[0] ?? 2015}</span><span>{years[n - 1] ?? 2050}</span>
-          </div>
-        </div>
-      </div>
-
       {/* Error */}
       {error && (
         <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10,
@@ -569,41 +847,45 @@ export default function EmissionsTabV2({ region, gas, unit }) {
 
       {/* Results */}
       {data && !loading && (
-        <div ref={reportRef} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div ref={reportRef} style={{
+          display: "flex", flexDirection: "column", gap: 20,
+          border: "3px solid rgba(30,112,147,0.5)",
+          borderRadius: 20, padding: "28px 24px", position: "relative",
+        }}>
 
-          {/* PDF export button */}
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button onClick={exportPDF} style={{
-              display: "flex", alignItems: "center", gap: 6,
-              background: "rgba(30,112,147,0.1)", color: "#1e7093",
-              border: "1px solid rgba(30,112,147,0.2)", borderRadius: 8,
-              padding: "7px 14px", cursor: "pointer", fontSize: 12.5,
-              fontFamily: "inherit", fontWeight: 600,
-            }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Export PDF
-            </button>
-          </div>
-
-          {/* Report header */}
-          <div style={{ paddingBottom: 14, borderBottom: "1px solid #e2e8f0" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 48 }}>
-              <img src="/Sustain360 - Dark Blue.png" alt="Sustain360"
-                style={{ height: 52, objectFit: "contain", flexShrink: 0 }} />
-              <div style={{ fontSize: 22, fontWeight: 800, color: "#0f172a", letterSpacing: -0.3 }}>
+          {/* Report header — logo | title (centered) | export button */}
+          <div style={{ display: "flex", alignItems: "center", paddingBottom: 16, borderBottom: "1px solid #e2e8f0" }}>
+            <div style={{ flex: 1 }}>
+              <img src="/Sustain360 - Dark Blue.png" alt="Sustain360" style={{ height: 40, objectFit: "contain" }} />
+            </div>
+            <div style={{ flex: 1, textAlign: "center" }}>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "#0f172a", letterSpacing: -0.3 }}>
                 {region === "costa_rica" ? "Costa Rica" : "Mexico"}
                 <span style={{ fontWeight: 400, color: "#94a3b8", margin: "0 10px", fontSize: 14 }}>—</span>
                 <span style={{ color: "#1a6585" }}>
-                  National Emission Report · {sectorMeta.icon} {sectorMeta.label}
+                  National Emission Report
                 </span>
               </div>
+              <div style={{ fontSize: 12, color: "#64748b", marginTop: 3 }}>
+                {(() => { const SI = SECTOR_ICON_MAP[sector]; return SI ? <SI size={12} style={{ verticalAlign: "middle", marginRight: 3 }} /> : null; })()}{sectorMeta.label} · Emission Type:{" "}
+                <strong style={{ color: data.emission_type === "exact" ? "#059669" : "#d97706" }}>
+                  {data.emission_type === "exact" ? "SISEPUEDE Model (Exact)" : "Proxy Estimate"}
+                </strong>
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: "#64748b", marginTop: 6, marginLeft: 4 }}>
-              Emission Type: <strong style={{ color: data.emission_type === "exact" ? "#059669" : "#d97706" }}>
-                {data.emission_type === "exact" ? "SISEPUEDE Model (Exact)" : "Proxy Estimate"}
-              </strong>
+            <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
+              <button onClick={exportPDF} style={{
+                display: "flex", alignItems: "center", gap: 6,
+                background: "rgba(30,112,147,0.1)", color: "#1e7093",
+                border: "1px solid rgba(30,112,147,0.2)", borderRadius: 8,
+                padding: "7px 14px", cursor: "pointer", fontSize: 12.5,
+                fontFamily: "inherit", fontWeight: 600,
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export PDF
+              </button>
             </div>
           </div>
 
@@ -642,7 +924,7 @@ export default function EmissionsTabV2({ region, gas, unit }) {
                   Emission Trajectory 2015–2050
                 </div>
                 <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>
-                  {sectorMeta.icon} {sectorMeta.label} · {region === "costa_rica" ? "Costa Rica" : "Mexico"} · {unit}
+                  {(() => { const SI = SECTOR_ICON_MAP[sector]; return SI ? <SI size={13} style={{ verticalAlign: "middle", marginRight: 3 }} /> : null; })()}{sectorMeta.label} · {region === "costa_rica" ? "Costa Rica" : "Mexico"} · {unit}
                 </div>
               </div>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
@@ -765,78 +1047,63 @@ export default function EmissionsTabV2({ region, gas, unit }) {
             </div>
           )}
 
-          {/* Mode breakdown: horizontal stacked bar — transport (by_mode) or non-transport (by_sub) */}
-          {(byModeData && modeBarData.length > 0 && activeModes.length > 0) || subBarData.length > 0 ? (
+          {/* Scope breakdown: stacked horizontal bar — all sectors */}
+          {byModeData && modeBarData.length > 0 && activeModes.length > 0 ? (
             <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16,
               padding: "20px 22px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700, color: "#0f172a" }}>
-                  {byModeData ? "Mode" : "Subsector"} Breakdown — {selYear}
+                  {isTransport ? "Mode" : "Subsector"} Breakdown — {selYear}
                 </div>
                 <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>
-                  {byModeData
+                  {isTransport
                     ? `Each bar = one scope · stacked by transport mode · ${unit}`
-                    : `Each bar = one subsector · sorted by emissions · ${unit}`}
+                    : `Each bar = one scope · stacked by subsector · ${unit}`}
                 </div>
               </div>
 
-              {/* Transport: stacked by mode */}
-              {byModeData && modeBarData.length > 0 && activeModes.length > 0 && (
-                <>
-                  <ResponsiveContainer width="100%" height={Math.max(100, modeBarData.length * 52 + 40)}>
-                    <BarChart data={modeBarData} layout="vertical"
-                      margin={{ top: 4, right: 24, left: 8, bottom: 26 }} barSize={28}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={true} horizontal={false} />
-                      <XAxis type="number" tick={{ fill: "#94a3b8", fontSize: 10.5 }}
-                        tickLine={false} axisLine={false} tickFormatter={v => fmt(v, 1)}
-                        label={{ value: `Emissions (${unit})`, position: "insideBottom", offset: -12,
-                          fill: "#94a3b8", fontSize: 10.5 }} />
-                      <YAxis type="category" dataKey="name" width={140}
-                        tick={{ fill: "#334155", fontSize: 11, fontWeight: 600 }}
-                        tickLine={false} axisLine={false} />
-                      <Tooltip content={<ModeBreakdownTooltip unit={unit} />}
-                        cursor={{ fill: "rgba(30,112,147,0.05)" }} />
-                      {activeModes.map(mode => (
-                        <Bar key={mode} dataKey={mode} stackId="a" fill={MODE_COLORS[mode] || "#94a3b8"} />
-                      ))}
-                    </BarChart>
-                  </ResponsiveContainer>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", marginTop: 14 }}>
-                    {activeModes.map(mode => (
-                      <div key={mode} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5 }}>
-                        <div style={{ width: 10, height: 10, borderRadius: 2,
-                          background: MODE_COLORS[mode] || "#94a3b8", flexShrink: 0 }} />
-                        <span style={{ color: "#64748b" }}>{MODE_LABELS[mode] || mode}</span>
-                      </div>
-                    ))}
+              <ResponsiveContainer width="100%" height={Math.max(100, modeBarData.length * 52 + 40)}>
+                <BarChart data={modeBarData} layout="vertical"
+                  margin={{ top: 4, right: 24, left: 8, bottom: 26 }} barSize={28}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={true} horizontal={false} />
+                  <XAxis type="number" tick={{ fill: "#94a3b8", fontSize: 10.5 }}
+                    tickLine={false} axisLine={false} tickFormatter={v => fmt(v, 1)}
+                    label={{ value: `Emissions (${unit})`, position: "insideBottom", offset: -12,
+                      fill: "#94a3b8", fontSize: 10.5 }} />
+                  <YAxis type="category" dataKey="name" width={160}
+                    tick={{ fill: "#334155", fontSize: 11, fontWeight: 600 }}
+                    tickLine={false} axisLine={false} />
+                  <Tooltip content={<ModeBreakdownTooltip unit={unit} modeLabel={modeLabel} />}
+                    cursor={{ fill: "rgba(30,112,147,0.05)" }} />
+                  {activeModes.map(mode => (
+                    <Bar key={mode} dataKey={mode} stackId="a" fill={modeColor(mode)} />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", marginTop: 14 }}>
+                {activeModes.map(mode => (
+                  <div key={mode} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11.5 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: 2,
+                      background: modeColor(mode), flexShrink: 0 }} />
+                    <span style={{ color: "#64748b" }}>{modeLabel(mode)}</span>
                   </div>
-                </>
-              )}
+                ))}
+              </div>
 
-              {/* Non-transport: one bar per subsector */}
-              {subBarData.length > 0 && (
-                <ResponsiveContainer width="100%" height={Math.max(80, subBarData.length * 44 + 40)}>
-                  <BarChart data={subBarData} layout="vertical"
-                    margin={{ top: 4, right: 24, left: 8, bottom: 26 }} barSize={26}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={true} horizontal={false} />
-                    <XAxis type="number" tick={{ fill: "#94a3b8", fontSize: 10.5 }}
-                      tickLine={false} axisLine={false} tickFormatter={v => fmt(v, 1)}
-                      label={{ value: `Emissions (${unit})`, position: "insideBottom", offset: -12,
-                        fill: "#94a3b8", fontSize: 10.5 }} />
-                    <YAxis type="category" dataKey="name" width={160}
-                      tick={{ fill: "#334155", fontSize: 11, fontWeight: 600 }}
-                      tickLine={false} axisLine={false} />
-                    <Tooltip
-                      formatter={(v, _, p) => [fmt(v, 2) + " " + unit, p.payload.name]}
-                      contentStyle={{ borderRadius: 8, fontSize: 12, border: "1px solid #e2e8f0" }} />
-                    <Bar dataKey="value" radius={[0, 5, 5, 0]}>
-                      {subBarData.map((d, i) => <Cell key={i} fill={d.color} />)}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
             </div>
           ) : null}
+
+          {/* Category breakdown — scope rows stacked by fine-grained category */}
+          {data?.by_detail && (
+            <CategoryBreakdownChart
+              byDetail={data.by_detail}
+              byMode={byModeData}
+              scopeSeries={scopeSeries}
+              selIdx={selIdx}
+              selYear={selYear}
+              unit={unit}
+            />
+          )}
 
           {/* Scope detail cards — expandable */}
           {hasScopes && scopeSeries && scopeSeries.length > 0 && (
@@ -860,7 +1127,7 @@ export default function EmissionsTabV2({ region, gas, unit }) {
                     subsectorKeys={subsectorKeys}
                     modeData={modeData}
                     bySubData={data?.by_sub}
-                    detailData={s.key === "scope1" && data?.by_detail ? data.by_detail : null}
+                    detailData={s.key === "scope1" && sector === "industrial" && data?.by_detail?.ippu ? data.by_detail.ippu : null}
                     selIdx={selIdx}
                     selYear={selYear}
                     unit={unit}

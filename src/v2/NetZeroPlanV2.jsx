@@ -4,6 +4,11 @@ import {
   AreaChart, Area, LineChart, Line, ReferenceLine, Legend,
 } from "recharts";
 import { fetchNetZeroPolicies, runNetZeroBatch } from "./api";
+import {
+  IconBarChart, IconTrendingDown, IconDollarSign,
+  IconPlay, IconDownload, IconInfo,
+  SECTOR_ICON_MAP,
+} from "./Icons";
 
 const G = "radial-gradient(circle at 17.9167% 91.6667%, rgb(30,112,147) 0%, 17.5%, rgb(26,101,133) 100%)";
 
@@ -21,15 +26,11 @@ const SECTOR_LABELS = {
   waste:       "Waste",
   industrial:  "Industrial",
 };
-const SECTOR_ICONS = {
-  transport:   "🚗",
-  agriculture: "🌾",
-  energy:      "⚡",
-  waste:       "♻️",
-  industrial:  "🏭",
-};
+// Sector SVG icons from Icons.jsx
 
 const NET_ZERO_LINE = 0;
+
+const ALL_SECTORS = Object.keys(SECTOR_COLORS);
 
 function fmt(n, dp = 1) {
   if (n === undefined || n === null || isNaN(n)) return "—";
@@ -78,22 +79,40 @@ function TrajTooltip({ active, payload, label, unit }) {
 }
 
 const SUBTABS = [
-  { id: "macc",     label: "MACC Chart",          icon: "📊" },
-  { id: "traj",     label: "Net Zero Trajectory",  icon: "📈" },
-  { id: "invest",   label: "Investment Plan",       icon: "💰" },
+  { id: "macc",   label: "MACC Chart",          Icon: IconBarChart      },
+  { id: "traj",   label: "Net Zero Trajectory",  Icon: IconTrendingDown  },
+  { id: "invest", label: "Investment Plan",       Icon: IconDollarSign   },
 ];
 
-export default function NetZeroPlanV2({ region, gas, unit }) {
-  const [policies,   setPolicies]   = useState([]);
-  const [batchData,  setBatchData]  = useState(null);
-  const [loading,    setLoading]    = useState(false);
-  const [error,      setError]      = useState(null);
-  const [costs,      setCosts]      = useState({});
-  const [enabled,    setEnabled]    = useState({});
-  const [activeTab,  setActiveTab]  = useState("macc");
-  const reportRef = useRef(null);
+export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onToggleSector, onToggleAll }) {
+  const [policies,  setPolicies]  = useState([]);
+  const [batchData, setBatchData] = useState(null);
+  const [loading,   setLoading]   = useState(false);
+  const [error,     setError]     = useState(null);
+  const [costs,     setCosts]     = useState({});
+  const [enabled,   setEnabled]   = useState({});
+  const [activeTab, setActiveTab] = useState("macc");
+  const reportRef    = useRef(null);
+  const prevSectors  = useRef(enabledSectors);
 
-  // Load net-zero policy metadata
+  // Sync per-policy enabled when a whole sector is toggled from AppV2
+  useEffect(() => {
+    const prev = prevSectors.current;
+    const changed = ALL_SECTORS.filter(s => prev[s] !== enabledSectors[s]);
+    if (changed.length > 0) {
+      setEnabled(e => {
+        const copy = { ...e };
+        changed.forEach(sec => {
+          policies.filter(p => (p.sector || "transport") === sec)
+            .forEach(p => { copy[p.id] = !!enabledSectors[sec]; });
+        });
+        return copy;
+      });
+    }
+    prevSectors.current = enabledSectors;
+  }, [enabledSectors, policies]);
+
+  // Load net-zero policy metadata — init enabled state from current enabledSectors
   useEffect(() => {
     fetchNetZeroPolicies()
       .then(data => {
@@ -103,12 +122,14 @@ export default function NetZeroPlanV2({ region, gas, unit }) {
         const initEnabled = {};
         pols.forEach(p => {
           initCosts[p.id]   = p.default_capex_per_tco2 ?? 50;
-          initEnabled[p.id] = true;
+          // Respect whatever sectors the user already has toggled
+          initEnabled[p.id] = enabledSectors[p.sector] !== false;
         });
         setCosts(initCosts);
         setEnabled(initEnabled);
       })
       .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const runBatch = useCallback(async () => {
@@ -137,32 +158,42 @@ export default function NetZeroPlanV2({ region, gas, unit }) {
   // ── Derived data ──────────────────────────────────────────────────────────
   const years    = batchData?.years    || [];
   const baseline = batchData?.baseline || [];
-  const withAll  = batchData?.with_all_policies || [];
+
+  // Compute trajectory from ONLY the enabled policies using per-policy abatement series
+  const activePolicies = (batchData?.policies || []).filter(p => enabled[p.id] !== false);
+
+  const withSelected = baseline.map((bl, i) => {
+    const abate = activePolicies.reduce((sum, p) => {
+      const key    = `${p.sector}::${p.id}`;
+      const series = batchData.results?.[key]?.abatement || [];
+      return sum + (series[i] || 0);
+    }, 0);
+    return parseFloat(Math.max(0, bl - abate).toFixed(4));
+  });
 
   // MACC bars: each policy → { name, sector, abatement, cost }
-  const maccBars = (batchData?.policies || [])
-    .filter(p => enabled[p.id] !== false)
+  const maccBars = activePolicies
     .map(p => ({
-      name:      p.label,
+      name:      p.label || p.name || p.id,
       sector:    p.sector,
       abatement: p.total_abatement || 0,
       cost:      costs[p.id] ?? p.default_capex_per_tco2 ?? 50,
     }))
     .sort((a, b) => a.cost - b.cost);
 
-  // Trajectory line chart data
+  // Trajectory line chart data — reflects current selection
   const trajData = years.map((yr, i) => ({
-    year:     yr,
-    Baseline: parseFloat((baseline[i] || 0).toFixed(4)),
-    "With All Policies": parseFloat((withAll[i] || 0).toFixed(4)),
+    year:                   yr,
+    Baseline:               parseFloat((baseline[i] || 0).toFixed(4)),
+    "With Selected Policies": withSelected[i] ?? 0,
   }));
 
-  // Summary headline stats
+  // Summary headline stats — based on selected policies only
   const baselineFinal = baseline[baseline.length - 1] ?? 0;
-  const policyFinal   = withAll[withAll.length - 1]   ?? 0;
+  const policyFinal   = withSelected[withSelected.length - 1] ?? 0;
   const totalAbate    = baselineFinal - policyFinal;
   const pctReduction  = baselineFinal > 0 ? (totalAbate / baselineFinal * 100) : 0;
-  const cumulAbate    = baseline.reduce((s, v, i) => s + Math.max(0, v - (withAll[i] || v)), 0);
+  const cumulAbate    = baseline.reduce((s, v, i) => s + Math.max(0, v - (withSelected[i] ?? v)), 0);
 
   // Investment table rows
   const investRows = (batchData?.policies || [])
@@ -204,7 +235,7 @@ export default function NetZeroPlanV2({ region, gas, unit }) {
             display: "flex", alignItems: "center", gap: 8,
             boxShadow: loading ? "none" : "0 2px 8px rgba(30,112,147,0.3)",
           }}>
-          {loading ? <><Spinner size={14} /> Computing…</> : "▶ Run Net Zero Batch"}
+          {loading ? <><Spinner size={14} /> Computing…</> : <><IconPlay size={13} /> Run Net Zero Batch</>}
         </button>
       </div>
 
@@ -226,103 +257,191 @@ export default function NetZeroPlanV2({ region, gas, unit }) {
         </div>
       )}
 
-      {/* Hint */}
-      {!loading && !batchData && !error && (
-        <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 12,
-          padding: "28px 24px", textAlign: "center", color: "#0369a1" }}>
-          <div style={{ fontSize: 32, marginBottom: 10 }}>🎯</div>
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>
-            Click "Run Net Zero Batch" to simulate all policies across all sectors
+      {/* Policy Configuration — grouped by sector, only selected sectors shown */}
+      {policies.length > 0 && (
+        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, overflow: "hidden" }}>
+          {/* Header */}
+          <div style={{ padding: "16px 22px", borderBottom: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>Policy Configuration</div>
+              <div style={{ fontSize: 11.5, color: "#94a3b8", marginTop: 2 }}>
+                Select sectors above · check/uncheck individual policies · adjust CapEx cost
+              </div>
+            </div>
+            <div style={{ fontSize: 11.5, color: "#64748b" }}>
+              <strong style={{ color: "#0f172a" }}>
+                {Object.values(enabled).filter(Boolean).length}
+              </strong> / {policies.length} policies active
+            </div>
           </div>
-          <div style={{ fontSize: 13, color: "#0284c7" }}>
-            This will compute the combined abatement potential for {region === "costa_rica" ? "Costa Rica" : "Mexico"}'s net zero pathway.
-          </div>
+
+          {/* No sector selected hint */}
+          {ALL_SECTORS.every(s => !enabledSectors[s]) && (
+            <div style={{ padding: "32px 22px", textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
+              No sectors selected. Use the <strong>Sectors</strong> control at the top to choose sectors.
+            </div>
+          )}
+
+          {/* Sector groups */}
+          {ALL_SECTORS.filter(sec => enabledSectors[sec]).map(sec => {
+            const col      = SECTOR_COLORS[sec] || "#64748b";
+            const secPols  = policies.filter(p => (p.sector || "transport") === sec);
+            if (!secPols.length) return null;
+            const allSecOn = secPols.every(p => !!enabled[p.id]);
+            const noneSecOn = secPols.every(p => !enabled[p.id]);
+            const enabledCount = secPols.filter(p => !!enabled[p.id]).length;
+
+            return (
+              <div key={sec} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                {/* Sector header row */}
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 12,
+                  padding: "12px 22px",
+                  background: col + "0d",
+                  borderLeft: `4px solid ${col}`,
+                }}>
+                  {(() => { const SI = SECTOR_ICON_MAP[sec]; return SI ? <SI size={18} style={{ color: col }} /> : null; })()}
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontSize: 13.5, fontWeight: 700, color: "#0f172a" }}>
+                      {SECTOR_LABELS[sec]}
+                    </span>
+                    <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: 8 }}>
+                      {enabledCount} / {secPols.length} selected
+                    </span>
+                  </div>
+                  {/* Select all / none for this sector */}
+                  <button
+                    onClick={() => {
+                      const val = !allSecOn;
+                      setEnabled(prev => {
+                        const copy = { ...prev };
+                        secPols.forEach(p => { copy[p.id] = val; });
+                        return copy;
+                      });
+                    }}
+                    style={{
+                      fontSize: 11, fontWeight: 600,
+                      color: allSecOn ? "#dc2626" : "#16a34a",
+                      background: allSecOn ? "#fef2f2" : "#f0fdf4",
+                      border: `1px solid ${allSecOn ? "#fecaca" : "#bbf7d0"}`,
+                      borderRadius: 6, padding: "3px 10px",
+                      cursor: "pointer", fontFamily: "inherit",
+                    }}
+                  >
+                    {allSecOn ? "Deselect all" : "Select all"}
+                  </button>
+                </div>
+
+                {/* Policy rows for this sector */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 0 }}>
+                  {secPols.map((p, idx) => {
+                    const on = !!enabled[p.id];
+                    return (
+                      <div key={p.id} style={{
+                        display: "flex", alignItems: "center", gap: 12,
+                        padding: "11px 22px",
+                        background: on ? col + "05" : "#fafafa",
+                        borderBottom: idx < secPols.length - 1 ? "1px solid #f8fafc" : "none",
+                        borderRight: "1px solid #f1f5f9",
+                        transition: "background 0.12s",
+                      }}>
+                        {/* Checkbox */}
+                        <input
+                          type="checkbox"
+                          checked={on}
+                          onChange={e => setEnabled(prev => ({ ...prev, [p.id]: e.target.checked }))}
+                          style={{ accentColor: col, width: 15, height: 15, flexShrink: 0, cursor: "pointer" }}
+                        />
+                        {/* Color dot */}
+                        <div style={{
+                          width: 8, height: 8, borderRadius: "50%",
+                          background: on ? col : "#e2e8f0", flexShrink: 0, transition: "background 0.12s",
+                        }} />
+                        {/* Label */}
+                        <span style={{
+                          flex: 1, fontSize: 13, fontWeight: on ? 600 : 400,
+                          color: on ? "#0f172a" : "#94a3b8",
+                          transition: "color 0.12s",
+                        }}>
+                          {p.label || p.name || p.id}
+                        </span>
+                        {/* CapEx input */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                          <span style={{ fontSize: 10, color: "#94a3b8", whiteSpace: "nowrap" }}>$/t CO₂</span>
+                          <input
+                            type="number" min={0} step={5}
+                            value={costs[p.id] ?? 50}
+                            onChange={e => setCosts(prev => ({ ...prev, [p.id]: +e.target.value }))}
+                            disabled={!on}
+                            style={{
+                              width: 62, fontSize: 12, padding: "3px 6px", borderRadius: 6,
+                              border: `1px solid ${on ? col + "60" : "#e2e8f0"}`,
+                              fontFamily: "inherit", textAlign: "right",
+                              background: on ? "#fff" : "#f1f5f9",
+                              color: on ? "#0f172a" : "#94a3b8",
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {/* Policy toggles + costs (always shown if policies loaded) */}
-      {policies.length > 0 && (
-        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: "20px 22px" }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 14 }}>Policy Configuration</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 }}>
-            {policies.map(p => {
-              const sec = p.sector || "transport";
-              const col = SECTOR_COLORS[sec] || "#64748b";
-              return (
-                <div key={p.id} style={{
-                  border: `1px solid ${enabled[p.id] ? col + "50" : "#e2e8f0"}`,
-                  borderLeft: `3px solid ${enabled[p.id] ? col : "#e2e8f0"}`,
-                  borderRadius: 10, padding: "10px 14px",
-                  background: enabled[p.id] ? col + "08" : "#f8fafc",
-                  transition: "all 0.15s",
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <input type="checkbox" checked={!!enabled[p.id]}
-                        onChange={e => setEnabled(prev => ({ ...prev, [p.id]: e.target.checked }))}
-                        style={{ accentColor: col, width: 14, height: 14 }} />
-                      <span style={{ fontSize: 12.5, fontWeight: 600, color: "#0f172a" }}>{p.label}</span>
-                    </div>
-                    <span style={{
-                      fontSize: 10, fontWeight: 700, color: col,
-                      background: col + "20", borderRadius: 10, padding: "2px 8px",
-                    }}>
-                      {SECTOR_ICONS[sec]} {SECTOR_LABELS[sec]}
-                    </span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 10, color: "#94a3b8", whiteSpace: "nowrap" }}>
-                      CapEx $/t CO₂:
-                    </span>
-                    <input type="number" min={0} step={5}
-                      value={costs[p.id] ?? 50}
-                      onChange={e => setCosts(prev => ({ ...prev, [p.id]: +e.target.value }))}
-                      disabled={!enabled[p.id]}
-                      style={{
-                        width: 70, fontSize: 12, padding: "3px 6px", borderRadius: 6,
-                        border: "1px solid #e2e8f0", fontFamily: "inherit",
-                        background: enabled[p.id] ? "#fff" : "#f1f5f9",
-                        color: enabled[p.id] ? "#0f172a" : "#94a3b8",
-                      }} />
-                  </div>
-                </div>
-              );
-            })}
+      {/* Run hint — shown below policy config until batch has been run */}
+      {!loading && !batchData && !error && (
+        <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 10,
+          padding: "14px 20px", display: "flex", alignItems: "center", gap: 14, color: "#0369a1" }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 2 }}>
+              Click "Run Net Zero Batch" to simulate all policies across all sectors
+            </div>
+            <div style={{ fontSize: 12, color: "#0284c7" }}>
+              Computes the combined abatement potential for {region === "costa_rica" ? "Costa Rica" : "Mexico"}'s net zero pathway.
+            </div>
           </div>
         </div>
       )}
 
       {/* Results */}
       {batchData && !loading && (
-        <div ref={reportRef} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div ref={reportRef} style={{
+          display: "flex", flexDirection: "column", gap: 20,
+          border: "3px solid rgba(30,112,147,0.5)",
+          borderRadius: 20, padding: "28px 24px", position: "relative",
+        }}>
 
-          {/* Export button */}
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button onClick={exportPDF} style={{
-              display: "flex", alignItems: "center", gap: 6,
-              background: "rgba(30,112,147,0.1)", color: "#1e7093",
-              border: "1px solid rgba(30,112,147,0.2)", borderRadius: 8,
-              padding: "7px 14px", cursor: "pointer", fontSize: 12.5,
-              fontFamily: "inherit", fontWeight: 600,
-            }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Export PDF
-            </button>
-          </div>
-
-          {/* Report header */}
-          <div style={{ display: "flex", alignItems: "center", gap: 16, paddingBottom: 14, borderBottom: "1px solid #e2e8f0" }}>
-            <img src="/Sustain360 - Dark Blue.png" alt="Sustain360" style={{ height: 44, objectFit: "contain" }} />
-            <div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: "#0f172a" }}>
+          {/* Report header — logo | title (centered) | export button */}
+          <div style={{ display: "flex", alignItems: "center", paddingBottom: 16, borderBottom: "1px solid #e2e8f0" }}>
+            <div style={{ flex: 1 }}>
+              <img src="/Sustain360 - Dark Blue.png" alt="Sustain360" style={{ height: 40, objectFit: "contain" }} />
+            </div>
+            <div style={{ flex: 1, textAlign: "center" }}>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "#0f172a", letterSpacing: -0.3 }}>
                 Net Zero Plan
-                <span style={{ color: "#1a6585", marginLeft: 10 }}>— {region === "costa_rica" ? "Costa Rica" : "Mexico"}</span>
+                <span style={{ color: "#1a6585", marginLeft: 10, fontWeight: 600, fontSize: 16 }}>— {region === "costa_rica" ? "Costa Rica" : "Mexico"}</span>
               </div>
               <div style={{ fontSize: 12, color: "#64748b", marginTop: 3 }}>
                 All-sector decarbonization analysis · {unit}
               </div>
+            </div>
+            <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
+              <button onClick={exportPDF} style={{
+                display: "flex", alignItems: "center", gap: 6,
+                background: "rgba(30,112,147,0.1)", color: "#1e7093",
+                border: "1px solid rgba(30,112,147,0.2)", borderRadius: 8,
+                padding: "7px 14px", cursor: "pointer", fontSize: 12.5,
+                fontFamily: "inherit", fontWeight: 600,
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export PDF
+              </button>
             </div>
           </div>
 
@@ -357,7 +476,7 @@ export default function NetZeroPlanV2({ region, gas, unit }) {
                   borderBottom: activeTab === t.id ? "2.5px solid #1e7093" : "2.5px solid transparent",
                   display: "flex", alignItems: "center", gap: 6,
                 }}>
-                  {t.icon} {t.label}
+                  <t.Icon size={14} /> {t.label}
                 </button>
               ))}
             </div>
@@ -378,7 +497,7 @@ export default function NetZeroPlanV2({ region, gas, unit }) {
                     {Object.entries(SECTOR_COLORS).map(([sec, col]) => (
                       <div key={sec} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5 }}>
                         <div style={{ width: 10, height: 10, borderRadius: 2, background: col }} />
-                        {SECTOR_ICONS[sec]} {SECTOR_LABELS[sec]}
+                        {SECTOR_LABELS[sec]}
                       </div>
                     ))}
                   </div>
@@ -432,14 +551,14 @@ export default function NetZeroPlanV2({ region, gas, unit }) {
                         label={{ value: "Net Zero", position: "right", fill: "#059669", fontSize: 10 }} />
                       <Area type="monotone" dataKey="Baseline" stroke="#64748b" strokeWidth={2}
                         fill="url(#gradBL)" strokeDasharray="6 3" />
-                      <Area type="monotone" dataKey="With All Policies" stroke="#1e7093" strokeWidth={2.5}
+                      <Area type="monotone" dataKey="With Selected Policies" stroke="#1e7093" strokeWidth={2.5}
                         fill="url(#gradPol)" />
                     </AreaChart>
                   </ResponsiveContainer>
                   <div style={{ display: "flex", gap: 20, justifyContent: "center", marginTop: 12 }}>
                     {[
                       { color: "#64748b", label: "Baseline (BAU)", dash: true },
-                      { color: "#1e7093", label: "With All Policies" },
+                      { color: "#1e7093", label: "With Selected Policies" },
                       { color: "#059669", label: "Net Zero Target", dash: true },
                     ].map(s => (
                       <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
@@ -488,7 +607,7 @@ export default function NetZeroPlanV2({ region, gas, unit }) {
                                   fontSize: 11, fontWeight: 700, color: col,
                                   background: col + "20", borderRadius: 10, padding: "2px 8px",
                                 }}>
-                                  {SECTOR_ICONS[row.sector]} {SECTOR_LABELS[row.sector]}
+                                  {(() => { const SI = SECTOR_ICON_MAP[row.sector]; return SI ? <SI size={11} style={{ verticalAlign: "middle", marginRight: 3 }} /> : null; })()}{SECTOR_LABELS[row.sector]}
                                 </span>
                               </td>
                               <td style={{ padding: "9px 14px", color: "#1e7093", fontWeight: 700,

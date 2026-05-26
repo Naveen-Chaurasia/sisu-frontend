@@ -3,7 +3,8 @@ import {
   AreaChart, Area, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, LineChart, Line, ReferenceLine,
 } from "recharts";
-import { fetchSectors, fetchSectorPolicies, runSectorPolicy } from "./api";
+import { fetchSectors, runSectorPolicy } from "./api";
+import { IconPlay, IconArrowUp, IconArrowDown, SECTOR_ICON_MAP } from "./Icons";
 
 const G = "radial-gradient(circle at 17.9167% 91.6667%, rgb(30,112,147) 0%, 17.5%, rgb(26,101,133) 100%)";
 const PALETTE = [
@@ -26,39 +27,7 @@ function Spinner({ size = 20 }) {
   );
 }
 
-function SectorDropdown({ sectors, value, onChange, loading }) {
-  return (
-    <div>
-      <div style={{ fontSize: 10, fontWeight: 700, color: "#1a6585", textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 6 }}>Sector</div>
-      <select value={value} onChange={e => onChange(e.target.value)} disabled={loading}
-        style={{ fontSize: 13, padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0",
-          background: "#f8fafc", color: "#0f172a", fontFamily: "inherit", cursor: "pointer", minWidth: 200 }}>
-        {sectors.map(s => (
-          <option key={s.sector} value={s.sector}>{s.icon} {s.label} ({s.policy_count} policies)</option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-function PolicyDropdown({ policies, value, onChange, loading }) {
-  return (
-    <div>
-      <div style={{ fontSize: 10, fontWeight: 700, color: "#1a6585", textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 6 }}>Policy</div>
-      <select value={value} onChange={e => onChange(e.target.value)} disabled={loading || !policies.length}
-        style={{ fontSize: 13, padding: "8px 12px", borderRadius: 8, border: "1px solid #e2e8f0",
-          background: "#f8fafc", color: "#0f172a", fontFamily: "inherit", cursor: "pointer", minWidth: 240 }}>
-        {policies.length === 0
-          ? <option value="">Loading policies…</option>
-          : policies.map(p => <option key={p.id} value={p.id}>{p.label}</option>)
-        }
-      </select>
-    </div>
-  );
-}
-
 function ImpactCard({ label, value, sub, color, positive }) {
-  const arrow = positive ? "▲" : "▼";
   return (
     <div style={{
       background: "#fff", border: "1px solid #e2e8f0",
@@ -66,8 +35,11 @@ function ImpactCard({ label, value, sub, color, positive }) {
       boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
     }}>
       <div style={{ fontSize: 9.5, fontWeight: 700, color, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 900, color: "#0f172a", lineHeight: 1 }}>
-        {positive !== undefined && <span style={{ fontSize: 14, marginRight: 3 }}>{arrow}</span>}
+      <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 22, fontWeight: 900, color: "#0f172a", lineHeight: 1 }}>
+        {positive !== undefined && (positive
+          ? <IconArrowUp size={14} style={{ color: "#059669", flexShrink: 0 }} />
+          : <IconArrowDown size={14} style={{ color: "#dc2626", flexShrink: 0 }} />
+        )}
         {value}
       </div>
       <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 3 }}>{sub}</div>
@@ -100,38 +72,21 @@ function BarTooltip({ active, payload }) {
   );
 }
 
-export default function SimulationTabV2({ region, gas, unit }) {
-  const [sectors,    setSectors]    = useState([]);
-  const [sector,     setSector]     = useState("transport");
-  const [policies,   setPolicies]   = useState([]);
-  const [policyId,   setPolicyId]   = useState("");
-  const [result,     setResult]     = useState(null);
-  const [loading,    setLoading]    = useState(false);
-  const [polLoading, setPolLoading] = useState(false);
-  const [error,      setError]      = useState(null);
-  const [selIdx,     setSelIdx]     = useState(0);
+export default function SimulationTabV2({ region, gas, unit, sector, policyId, policies, polLoading }) {
+  const [sectors,  setSectors]  = useState([]);
+  const [result,   setResult]   = useState(null);
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState(null);
+  const [selIdx,   setSelIdx]   = useState(0);
   const reportRef = useRef(null);
 
-  // Load sector list
+  // Load sector list (for metadata only: icon, label)
   useEffect(() => {
     fetchSectors().then(d => setSectors(d.sectors || [])).catch(() => {});
   }, []);
 
-  // Load policies when sector changes
-  useEffect(() => {
-    setPolLoading(true);
-    setPolicies([]);
-    setPolicyId("");
-    setResult(null);
-    fetchSectorPolicies(sector)
-      .then(d => {
-        const pols = d.policies || [];
-        setPolicies(pols);
-        if (pols.length > 0) setPolicyId(pols[0].id);
-      })
-      .catch(() => {})
-      .finally(() => setPolLoading(false));
-  }, [sector]);
+  // Reset result when sector or policy changes
+  useEffect(() => { setResult(null); setError(null); }, [sector, policyId]);
 
   async function handleRun() {
     if (!policyId) return;
@@ -207,13 +162,12 @@ export default function SimulationTabV2({ region, gas, unit }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
-      {/* Controls row */}
-      <div style={{ display: "flex", gap: 14, alignItems: "flex-end", flexWrap: "wrap" }}>
-        <SectorDropdown sectors={sectors} value={sector} onChange={setSector} loading={loading || polLoading} />
-        <PolicyDropdown policies={policies} value={policyId} onChange={setPolicyId} loading={loading || polLoading} />
+      {/* Run button */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={handleRun} disabled={loading || !policyId || polLoading}
           style={{
-            padding: "9px 22px", borderRadius: 8, border: "none", cursor: loading || !policyId ? "not-allowed" : "pointer",
+            padding: "9px 22px", borderRadius: 8, border: "none",
+            cursor: loading || !policyId ? "not-allowed" : "pointer",
             background: loading || !policyId ? "#e2e8f0" : G,
             color: loading || !policyId ? "#94a3b8" : "#fff",
             fontSize: 13.5, fontWeight: 700, fontFamily: "inherit",
@@ -221,8 +175,9 @@ export default function SimulationTabV2({ region, gas, unit }) {
             boxShadow: loading || !policyId ? "none" : "0 2px 8px rgba(30,112,147,0.3)",
             transition: "all 0.15s",
           }}>
-          {loading ? <><Spinner size={14} /> Running…</> : "▶ Run Simulation"}
+          {loading ? <><Spinner size={14} /> Running…</> : <><IconPlay size={13} /> Run Simulation</>}
         </button>
+        {polLoading && <span style={{ fontSize: 12, color: "#94a3b8" }}>Loading policies…</span>}
       </div>
 
       {/* Error */}
@@ -252,7 +207,7 @@ export default function SimulationTabV2({ region, gas, unit }) {
           background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 12,
           padding: "28px 24px", textAlign: "center", color: "#0369a1",
         }}>
-          <div style={{ fontSize: 32, marginBottom: 10 }}>⚗️</div>
+          <img src="/S360_Logo_Chakra.png" alt="" style={{ width: 52, height: 52, objectFit: "contain", marginBottom: 10, opacity: 0.7 }} />
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>Select a sector and policy, then click Run</div>
           <div style={{ fontSize: 13, color: "#0284c7" }}>
             The simulation will compute true SISEPUEDE emission abatement for the selected policy.
@@ -262,40 +217,44 @@ export default function SimulationTabV2({ region, gas, unit }) {
 
       {/* Results */}
       {result && !loading && (
-        <div ref={reportRef} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        <div ref={reportRef} style={{
+          display: "flex", flexDirection: "column", gap: 20,
+          border: "3px solid rgba(30,112,147,0.5)",
+          borderRadius: 20, padding: "28px 24px", position: "relative",
+        }}>
 
-          {/* Export button */}
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button onClick={exportPDF} style={{
-              display: "flex", alignItems: "center", gap: 6,
-              background: "rgba(30,112,147,0.1)", color: "#1e7093",
-              border: "1px solid rgba(30,112,147,0.2)", borderRadius: 8,
-              padding: "7px 14px", cursor: "pointer", fontSize: 12.5,
-              fontFamily: "inherit", fontWeight: 600,
-            }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Export PDF
-            </button>
-          </div>
-
-          {/* Report header */}
-          <div style={{ display: "flex", alignItems: "center", gap: 16, paddingBottom: 14, borderBottom: "1px solid #e2e8f0" }}>
-            <img src="/Sustain360 - Dark Blue.png" alt="Sustain360" style={{ height: 44, objectFit: "contain" }} />
-            <div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: "#0f172a" }}>
+          {/* Report header — logo | title (centered) | export button */}
+          <div style={{ display: "flex", alignItems: "center", paddingBottom: 16, borderBottom: "1px solid #e2e8f0" }}>
+            <div style={{ flex: 1 }}>
+              <img src="/Sustain360 - Dark Blue.png" alt="Sustain360" style={{ height: 40, objectFit: "contain" }} />
+            </div>
+            <div style={{ flex: 1, textAlign: "center" }}>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "#0f172a", letterSpacing: -0.3 }}>
                 Policy Simulation Results
-                <span style={{ color: "#1a6585", marginLeft: 10 }}>— {region === "costa_rica" ? "Costa Rica" : "Mexico"}</span>
+                <span style={{ color: "#1a6585", marginLeft: 10, fontWeight: 600, fontSize: 16 }}>— {region === "costa_rica" ? "Costa Rica" : "Mexico"}</span>
               </div>
               <div style={{ fontSize: 12, color: "#64748b", marginTop: 3 }}>
-                {sectorMeta.icon} {sectorMeta.label} ·{" "}
+                {(() => { const SI = SECTOR_ICON_MAP[sector]; return SI ? <SI size={12} style={{ verticalAlign: "middle", marginRight: 3 }} /> : null; })()}{sectorMeta.label} ·{" "}
                 <strong style={{ color: "#0f172a" }}>{policyMeta.label || policyId}</strong>{" "}
                 · Emission Type:{" "}
                 <strong style={{ color: result.emission_type === "exact" ? "#059669" : "#d97706" }}>
                   {result.emission_type === "exact" ? "SISEPUEDE Model (Exact)" : "Proxy Estimate"}
                 </strong>
               </div>
+            </div>
+            <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
+              <button onClick={exportPDF} style={{
+                display: "flex", alignItems: "center", gap: 6,
+                background: "rgba(30,112,147,0.1)", color: "#1e7093",
+                border: "1px solid rgba(30,112,147,0.2)", borderRadius: 8,
+                padding: "7px 14px", cursor: "pointer", fontSize: 12.5,
+                fontFamily: "inherit", fontWeight: 600,
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export PDF
+              </button>
             </div>
           </div>
 
