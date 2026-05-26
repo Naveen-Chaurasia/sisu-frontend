@@ -296,7 +296,7 @@ function SectorScopeCard({ scopeKey, values, info, subsectorKeys, modeData, bySu
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {info?.what && (
                 <div>
-                  <div style={{ fontSize: 10.5, fontWeight: 700, color: sm.color, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 8 }}>
+                  <div style={{ fontSize: 12, fontWeight: 900, color: sm.color, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 8 }}>
                     What's Included
                   </div>
                   <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 5 }}>

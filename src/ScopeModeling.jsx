@@ -389,7 +389,7 @@ function ScopeCard({ scope, data, unit, expanded, onToggle, gas, selIdx, natDp =
             {/* Left: what's included + columns */}
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
-                <div style={{ fontSize: 10.5, fontWeight: 700, color: scope.color, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 8 }}>What's included</div>
+                <div style={{ fontSize: 12, fontWeight: 900, color: scope.color, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 8 }}>What's included</div>
                 <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 5 }}>
                   {scope.what.map((w, i) => (
                     <li key={i} style={{ display: "flex", gap: 8, fontSize: 12.5, color: "#334155", lineHeight: 1.4 }}>
@@ -553,7 +553,7 @@ function LifecycleStageCard({ stage, data, unit, expanded, onToggle, gas, selIdx
             {/* Left: breakdown + columns */}
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
-                <div style={{ fontSize: 10.5, fontWeight: 700, color: stage.color, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 8 }}>What's included</div>
+                <div style={{ fontSize: 12, fontWeight: 900, color: stage.color, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 8 }}>What's included</div>
                 <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 5 }}>
                   {stage.what.map((w, i) => (
                     <li key={i} style={{ display: "flex", gap: 8, fontSize: 12.5, color: "#334155", lineHeight: 1.45 }}>
@@ -1168,7 +1168,7 @@ export default function ScopeModeling({ user, onBack, onLogout }) {
                 <div ref={reportRef} style={{
                   borderRadius: 20,
                   padding: "28px 24px",
-                  border: "1px solid rgba(30,112,147,0.3)",
+                  border: "3px solid rgba(30,112,147,0.5)",
                   position: "relative",
                 }}>
                   {/* Export button — top right */}
@@ -1694,7 +1694,7 @@ export default function ScopeModeling({ user, onBack, onLogout }) {
 
         {data && !loading && (
           <>
-          <div ref={emissionsReportRef} style={{ borderRadius: 20, padding: "28px 24px", border: "1px solid rgba(30,112,147,0.3)", position: "relative" }}>
+          <div ref={emissionsReportRef} style={{ borderRadius: 20, padding: "28px 24px", border: "3px solid rgba(30,112,147,0.5)", position: "relative" }}>
                   <button
                     onClick={exportEmissionsPDF}
                     title="Export PDF"

@@ -140,7 +140,7 @@ function Login({ onLogin }) {
 
         {/* Footer */}
         <div style={{ textAlign: "center", marginTop: 24, fontSize: 11.5, color: "#94a3b8" }}>
-          Secured · Sustain360 Climate Platform
+          Powered by <strong>Sustain360.ai</strong> · GHG Protocol aligned · ISO 14083
         </div>
       </div>
     </div>
@@ -176,7 +176,7 @@ function Welcome({ user, onSelect, onLogout }) {
         </svg>
       ),
       title: "Parametric Modeling",
-      desc: "Run SISEPUEDE policy simulations with full control — select fuel switch, efficiency, or mode-shift policies, set magnitude and target year, and get detailed impact reports with reduction trajectories.",
+      desc: "Run SISEPUEDE policy simulations with full control: select fuel switch, efficiency, or mode-shift policies, set magnitude and target year, and get detailed impact reports with reduction trajectories.",
       best: "Precise policy simulation",
       cta: "Configure & Simulate",
     },
@@ -189,7 +189,7 @@ function Welcome({ user, onSelect, onLogout }) {
         </svg>
       ),
       title: "Conversational Modeling",
-      desc: "Describe a decarbonization policy in plain English. Sustain360 AI interprets your intent, maps it to SISEPUEDE parameters, and runs the simulation automatically — no technical setup required.",
+      desc: "Describe a decarbonization policy in plain English. Sustain360 AI interprets your intent, maps it to SISEPUEDE parameters, and runs the simulation automatically with no technical setup required.",
       best: "AI-powered exploration",
       cta: "Describe & Simulate",
     },
@@ -201,7 +201,7 @@ function Welcome({ user, onSelect, onLogout }) {
           <path d="M12 8v3M8.5 16.5l-2-3M15.5 16.5l2-3"/>
         </svg>
       ),
-      title: "National Emissions",
+      title: "National Emission Analysis",
       desc: "Explore national emission baselines for Costa Rica and Mexico. View Scope 1 / 2 / 3 and ISO 14083 lifecycle stage breakdowns, MACC charts, Net Zero trajectory analysis, and investment plans across 8 standard decarbonization policies.",
       best: "Baseline & Net Zero planning",
       cta: "Explore Emissions",
@@ -239,7 +239,7 @@ function Welcome({ user, onSelect, onLogout }) {
             <span style={{ color: "#67c5e0" }}>Decarbonization Modeling</span>
           </h1>
           <p style={{ fontSize: 15.5, color: "rgba(255,255,255,0.6)", lineHeight: 1.8, maxWidth: 500, margin: "0 auto 32px" }}>
-            Design, simulate, and evaluate national transport decarbonization strategies with AI-powered SISEPUEDE climate impact insights.
+            Design, simulate, and evaluate national transport decarbonization strategies with AI-powered climate impact insights. Powered by Sustain360.ai
           </p>
 
 
@@ -349,7 +349,7 @@ function Welcome({ user, onSelect, onLogout }) {
 
           {/* Footer note */}
           <div style={{ marginTop: 36, fontSize: 11.5, color: "rgba(255,255,255,0.3)" }}>
-            Powered by <strong style={{ color: "rgba(255,255,255,0.55)" }}>SISEPUEDE</strong> climate modeling engine · GHG Protocol aligned · ISO 14083
+            Powered by <strong style={{ color: "rgba(255,255,255,0.55)" }}>Sustain360.ai</strong> · GHG Protocol aligned · ISO 14083
           </div>
         </div>
       </div>
