@@ -9,6 +9,10 @@
       "destination": "https://web-production-c3591.up.railway.app/v2/:path*"
     },
     {
+      "source": "/mines/:path*",
+      "destination": "https://web-production-c3591.up.railway.app/mines/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
