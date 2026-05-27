@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import ScopeModeling from "./ScopeModeling";
 import AppV2 from "./v2/AppV2";
+import MinesApp from "./mines/MinesApp";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const G = "radial-gradient(circle at 17.9167% 91.6667%, rgb(30, 112, 147) 0%, 17.5%, rgb(26, 101, 133) 100%)";
@@ -61,86 +62,130 @@ function Login({ onLogin }) {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "linear-gradient(160deg, #f0f9ff 0%, #e0f2fe 50%, #f0fdf4 100%)",
+      background: "#fff",
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       padding: 24,
     }}>
-      {/* Card */}
-      <div style={{
-        background: "#fff", borderRadius: 18, padding: "40px 40px 36px",
-        width: "100%", maxWidth: 400,
-        boxShadow: "0 8px 40px rgba(26,101,133,0.13)",
-        border: "1px solid rgba(30,112,147,0.15)",
-      }}>
-        {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <img
-            src="https://static.wixstatic.com/media/15f61d_291a4247c1f049ad951ee1be7efbb7b8~mv2.png/v1/fill/w_182,h_31,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Sustain360%20Logo%20-%20Blue.png"
-            alt="Sustain360"
-            style={{ height: 36, objectFit: "contain" }}
-          />
-        </div>
+      <style>{`
+        @keyframes login-border-spin {
+          0%   { background-position: 0%   50%; }
+          50%  { background-position: 100% 50%; }
+          100% { background-position: 0%   50%; }
+        }
+        @keyframes login-shine-sweep {
+          0%   { left: -60%; opacity: 0; }
+          20%  { opacity: 1; }
+          80%  { opacity: 1; }
+          100% { left: 120%; opacity: 0; }
+        }
+        .login-border-wrap {
+          position: relative;
+          border-radius: 20px;
+          padding: 2.5px;
+          background: linear-gradient(270deg, #67c5e0, #1e7093, #34d399, #a78bfa, #67c5e0);
+          background-size: 400% 400%;
+          animation: login-border-spin 3.5s ease infinite;
+          box-shadow: 0 8px 40px rgba(26,101,133,0.22), 0 0 40px rgba(103,197,224,0.2);
+          width: 100%; max-width: 400px;
+        }
+        .login-card-inner {
+          background: #fff;
+          border-radius: 18px;
+          padding: 40px 40px 36px;
+          position: relative;
+          overflow: hidden;
+        }
+        .login-card-inner::after {
+          content: '';
+          position: absolute;
+          top: 0; bottom: 0;
+          left: -60%;
+          width: 35%;
+          background: linear-gradient(
+            to right,
+            rgba(255,255,255,0) 0%,
+            rgba(255,255,255,0.5) 50%,
+            rgba(255,255,255,0) 100%
+          );
+          transform: skewX(-15deg);
+          animation: login-shine-sweep 3.5s ease-in-out infinite;
+          pointer-events: none;
+        }
+      `}</style>
 
-        {/* Divider */}
-        <div style={{ height: 1, background: "#f1f5f9", marginBottom: 28 }} />
-
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {/* Username */}
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#1a6585", letterSpacing: 0.7, textTransform: "uppercase", marginBottom: 6 }}>Username</div>
-            <input
-              type="text" autoComplete="username" placeholder="Enter username"
-              value={username} onChange={e => { setUsername(e.target.value); setError(""); }}
-              style={inputStyle}
-              onFocus={e => e.target.style.borderColor = "#1e7093"}
-              onBlur={e => e.target.style.borderColor = "#e2e8f0"}
+      {/* Animated border card */}
+      <div className="login-border-wrap">
+        <div className="login-card-inner">
+          {/* Logo */}
+          <div style={{ textAlign: "center", marginBottom: 28 }}>
+            <img
+              src="https://static.wixstatic.com/media/15f61d_291a4247c1f049ad951ee1be7efbb7b8~mv2.png/v1/fill/w_182,h_31,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Sustain360%20Logo%20-%20Blue.png"
+              alt="Sustain360"
+              style={{ height: 36, objectFit: "contain" }}
             />
           </div>
 
-          {/* Password */}
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#1a6585", letterSpacing: 0.7, textTransform: "uppercase", marginBottom: 6 }}>Password</div>
-            <div style={{ position: "relative" }}>
+          {/* Divider */}
+          <div style={{ height: 1, background: "#f1f5f9", marginBottom: 28 }} />
+
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* Username */}
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#1a6585", letterSpacing: 0.7, textTransform: "uppercase", marginBottom: 6 }}>Username</div>
               <input
-                type={showPw ? "text" : "password"} autoComplete="current-password" placeholder="Enter password"
-                value={password} onChange={e => { setPassword(e.target.value); setError(""); }}
-                style={{ ...inputStyle, paddingRight: 44 }}
+                type="text" autoComplete="username" placeholder="Enter username"
+                value={username} onChange={e => { setUsername(e.target.value); setError(""); }}
+                style={inputStyle}
                 onFocus={e => e.target.style.borderColor = "#1e7093"}
                 onBlur={e => e.target.style.borderColor = "#e2e8f0"}
               />
-              <button type="button" onClick={() => setShowPw(v => !v)} style={{
-                position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
-                background: "none", border: "none", cursor: "pointer", color: "#94a3b8",
-                fontSize: 13, padding: 0, fontFamily: "inherit",
-              }}>{showPw ? "Hide" : "Show"}</button>
             </div>
+
+            {/* Password */}
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#1a6585", letterSpacing: 0.7, textTransform: "uppercase", marginBottom: 6 }}>Password</div>
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showPw ? "text" : "password"} autoComplete="current-password" placeholder="Enter password"
+                  value={password} onChange={e => { setPassword(e.target.value); setError(""); }}
+                  style={{ ...inputStyle, paddingRight: 44 }}
+                  onFocus={e => e.target.style.borderColor = "#1e7093"}
+                  onBlur={e => e.target.style.borderColor = "#e2e8f0"}
+                />
+                <button type="button" onClick={() => setShowPw(v => !v)} style={{
+                  position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+                  background: "none", border: "none", cursor: "pointer", color: "#94a3b8",
+                  fontSize: 13, padding: 0, fontFamily: "inherit",
+                }}>{showPw ? "Hide" : "Show"}</button>
+              </div>
+            </div>
+
+            {/* Error */}
+            {error && (
+              <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "9px 14px", color: "#dc2626", fontSize: 13 }}>
+                {error}
+              </div>
+            )}
+
+            {/* Submit */}
+            <button type="submit" disabled={loading} style={{
+              marginTop: 4, background: loading ? "#e2e8f0" : G,
+              color: loading ? "#94a3b8" : "#fff", border: "none",
+              borderRadius: 9, fontSize: 14, fontWeight: 700, padding: "12px 0",
+              cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit",
+              boxShadow: loading ? "none" : "0 4px 16px rgba(30,112,147,0.35)", transition: "opacity 0.15s",
+            }}
+              onMouseEnter={e => { if (!loading) e.currentTarget.style.opacity = "0.9"; }}
+              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+            >
+              {loading ? "Signing in…" : "Sign In"}
+            </button>
+          </form>
+
+          {/* Footer */}
+          <div style={{ textAlign: "center", marginTop: 24, fontSize: 11.5, color: "#94a3b8" }}>
+            Powered by <strong>Sustain360.ai</strong> · GHG Protocol aligned · ISO 14083
           </div>
-
-          {/* Error */}
-          {error && (
-            <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, padding: "9px 14px", color: "#dc2626", fontSize: 13 }}>
-              {error}
-            </div>
-          )}
-
-          {/* Submit */}
-          <button type="submit" disabled={loading} style={{
-            marginTop: 4, background: loading ? "#e2e8f0" : G,
-            color: loading ? "#94a3b8" : "#fff", border: "none",
-            borderRadius: 9, fontSize: 14, fontWeight: 700, padding: "12px 0",
-            cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit",
-            boxShadow: loading ? "none" : "0 4px 16px rgba(30,112,147,0.35)", transition: "opacity 0.15s",
-          }}
-            onMouseEnter={e => { if (!loading) e.currentTarget.style.opacity = "0.9"; }}
-            onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-          >
-            {loading ? "Signing in…" : "Sign In"}
-          </button>
-        </form>
-
-        {/* Footer */}
-        <div style={{ textAlign: "center", marginTop: 24, fontSize: 11.5, color: "#94a3b8" }}>
-          Powered by <strong>Sustain360.ai</strong> · GHG Protocol aligned · ISO 14083
         </div>
       </div>
     </div>
@@ -148,10 +193,19 @@ function Login({ onLogin }) {
 }
 
 // ── Welcome / Mode selection ─────────────────────────────────────────────────
-function Welcome({ user, onSelect, onLogout }) {
+function Welcome({ user, onSelect, onLogout, onBack }) {
   const NAV = (
-    <div style={{ background: G, padding: "0 32px", display: "flex", alignItems: "center", height: 58, gap: 16, boxShadow: "0 2px 12px rgba(26,101,133,0.3)" }}>
-      <img src="https://static.wixstatic.com/media/15f61d_291a4247c1f049ad951ee1be7efbb7b8~mv2.png/v1/fill/w_182,h_31,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Sustain360%20Logo%20-%20Blue.png" alt="Sustain360" style={{ height: 28, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)" }} />
+    <div style={{ background: G, padding: "0 32px", display: "flex", alignItems: "center", height: 58, boxShadow: "0 2px 12px rgba(26,101,133,0.3)" }}>
+      {/* Left: Logo + Projects button */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <img src="https://static.wixstatic.com/media/15f61d_291a4247c1f049ad951ee1be7efbb7b8~mv2.png/v1/fill/w_182,h_31,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Sustain360%20Logo%20-%20Blue.png" alt="Sustain360" style={{ height: 28, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)" }} />
+        <div style={{ width: 1, height: 22, background: "rgba(255,255,255,0.2)" }} />
+        <button onClick={onBack} style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, color: "#e0f7fa", fontSize: 12, fontWeight: 600, padding: "5px 14px", cursor: "pointer", fontFamily: "inherit" }}
+          onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.22)"}
+          onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}
+        >← Projects</button>
+      </div>
+      {/* Right: user avatar + sign out */}
       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", borderRadius: 20, padding: "5px 14px 5px 8px" }}>
           <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff" }}>{user[0].toUpperCase()}</div>
@@ -350,6 +404,165 @@ function Welcome({ user, onSelect, onLogout }) {
           {/* Footer note */}
           <div style={{ marginTop: 36, fontSize: 11.5, color: "rgba(255,255,255,0.3)" }}>
             Powered by <strong style={{ color: "rgba(255,255,255,0.55)" }}>Sustain360.ai</strong> · GHG Protocol aligned · ISO 14083
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Project Selector ─────────────────────────────────────────────────────────
+function ProjectSelector({ user, onSelect, onLogout }) {
+  const PROJECTS = [
+    {
+      id: "emission",
+      title: "National Emission Modeling",
+      desc: "Design, simulate, and evaluate national transport and multi-sector decarbonization strategies. Includes parametric and conversational policy modeling powered by SISEPUEDE.",
+      badge: "Climate & Policy",
+      icon: (
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/>
+          <path d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/>
+        </svg>
+      ),
+      color: "#1e7093",
+    },
+    {
+      id: "investment",
+      title: "Investment Modeling",
+      desc: "Analyze critical minerals mining assets in Mozambique. Build DCF models, run Monte Carlo simulations, and evaluate portfolio NPV, IRR, and risk across 11 mine assets.",
+      badge: "Minerals & Finance",
+      icon: (
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="6 3 18 3 22 9 12 21 2 9"/>
+          <line x1="2" y1="9" x2="22" y2="9"/>
+          <line x1="12" y1="3" x2="6" y2="9"/><line x1="12" y1="3" x2="18" y2="9"/>
+        </svg>
+      ),
+      color: "#0f4c6b",
+    },
+  ];
+
+  return (
+    <div style={{ minHeight: "100vh", fontFamily: "Inter, sans-serif" }}>
+      {/* Nav */}
+      <div style={{ background: G, padding: "0 32px", display: "flex", alignItems: "center", height: 58, gap: 16, boxShadow: "0 2px 12px rgba(26,101,133,0.3)" }}>
+        <img src="https://static.wixstatic.com/media/15f61d_291a4247c1f049ad951ee1be7efbb7b8~mv2.png/v1/fill/w_182,h_31,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Sustain360%20Logo%20-%20Blue.png"
+          alt="Sustain360" style={{ height: 28, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)" }} />
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", borderRadius: 20, padding: "5px 14px 5px 8px" }}>
+            <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff" }}>{user[0].toUpperCase()}</div>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#e0f7fa" }}>{user}</span>
+          </div>
+          <button onClick={onLogout} style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, color: "#e0f7fa", fontSize: 12, fontWeight: 600, padding: "5px 12px", cursor: "pointer", fontFamily: "inherit" }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.22)"}
+            onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}
+          >Sign out</button>
+        </div>
+      </div>
+
+      {/* Hero */}
+      <div style={{
+        background: "linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%)",
+        minHeight: "calc(100vh - 58px)",
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        padding: "40px 32px", textAlign: "center", position: "relative", overflow: "hidden",
+      }}>
+        {/* Rings */}
+        <div style={{ position: "absolute", top: -80, right: -80, width: 360, height: 360, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.05)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: -100, left: -60, width: 320, height: 320, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.04)", pointerEvents: "none" }} />
+
+        <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 780 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(103,197,224,0.8)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 14 }}>
+            Welcome back, {user}
+          </div>
+          <h1 style={{ fontSize: 38, fontWeight: 900, color: "#fff", margin: "0 0 12px", letterSpacing: -0.8, lineHeight: 1.15 }}>
+            Select a Project
+          </h1>
+          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.55)", lineHeight: 1.75, maxWidth: 460, margin: "0 auto 44px" }}>
+            Choose a modeling module to begin your analysis session.
+          </p>
+
+          <style>{`
+            @keyframes proj-border-spin {
+              0%   { background-position: 0%   50%; }
+              50%  { background-position: 100% 50%; }
+              100% { background-position: 0%   50%; }
+            }
+            @keyframes proj-shine {
+              0%   { left: -60%; opacity: 0; }
+              20%  { opacity: 1; }
+              80%  { opacity: 1; }
+              100% { left: 120%; opacity: 0; }
+            }
+            .proj-border-wrap {
+              position: relative;
+              border-radius: 20px;
+              padding: 2.5px;
+              background: linear-gradient(270deg, #67c5e0, #1e7093, #34d399, #a78bfa, #67c5e0);
+              background-size: 400% 400%;
+              animation: proj-border-spin 4s ease infinite;
+              box-shadow: 0 4px 24px rgba(0,0,0,0.18), 0 0 30px rgba(103,197,224,0.15);
+              cursor: pointer;
+              transition: transform 0.2s, box-shadow 0.2s;
+            }
+            .proj-border-wrap:hover {
+              transform: translateY(-6px);
+              box-shadow: 0 20px 50px rgba(0,0,0,0.28), 0 0 40px rgba(103,197,224,0.25);
+            }
+            .proj-card-inner {
+              background: rgba(255,255,255,0.93);
+              border-radius: 18px;
+              padding: 30px 26px;
+              display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
+              text-align: left;
+              position: relative; overflow: hidden;
+              height: 100%;
+              box-sizing: border-box;
+              transition: background 0.2s;
+            }
+            .proj-border-wrap:hover .proj-card-inner {
+              background: #fff;
+            }
+            .proj-card-inner::after {
+              content: '';
+              position: absolute;
+              top: 0; bottom: 0; left: -60%;
+              width: 35%;
+              background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0) 100%);
+              transform: skewX(-15deg);
+              animation: proj-shine 4s ease-in-out infinite;
+              pointer-events: none;
+            }
+          `}</style>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, maxWidth: 720, margin: "0 auto" }}>
+            {PROJECTS.map(p => (
+              <div key={p.id} className="proj-border-wrap" onClick={() => onSelect(p.id)}>
+                <div className="proj-card-inner">
+                  <div style={{ width: 52, height: 52, borderRadius: 14, background: `${p.color}18`, border: `1px solid ${p.color}30`, display: "flex", alignItems: "center", justifyContent: "center", color: p.color }}>
+                    {p.icon}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 17, fontWeight: 800, color: "#0f172a", marginBottom: 8 }}>{p.title}</div>
+                    <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.65 }}>{p.desc}</div>
+                  </div>
+                  <div style={{ fontSize: 10.5, fontWeight: 700, color: p.color, background: `${p.color}14`, borderRadius: 20, padding: "3px 12px" }}>
+                    {p.badge}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 700, color: p.color, marginTop: 2 }}>
+                    Open Project
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop: 48, fontSize: 11, color: "rgba(255,255,255,0.7)" }}>
+            Powered by <strong style={{ color: "#fff" }}>Sustain360.ai</strong>
           </div>
         </div>
       </div>
@@ -610,6 +823,7 @@ const sel  = { background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius:
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
   const [authUser, setAuthUser]         = useState(null);
+  const [project, setProject]           = useState(null);
   const [mode, setMode]                 = useState(null);
   const [region, setRegion]             = useState("costa_rica");
   const [nlText, setNlText]             = useState("");
@@ -677,20 +891,25 @@ export default function App() {
     ? result.data.years.map((year, i) => ({ year, Baseline: gasData.baseline[i], Policy: gasData.policy[i] }))
     : null;
 
-  if (!authUser) return <Login onLogin={setAuthUser} />;
-  if (!mode) return <Welcome user={authUser} onSelect={setMode} onLogout={() => { setAuthUser(null); setMode(null); }} />;
+  if (!authUser) return <Login onLogin={u => { setAuthUser(u); setProject(null); setMode(null); }} />;
+  if (!project) return <ProjectSelector user={authUser} onSelect={setProject} onLogout={() => { setAuthUser(null); setProject(null); setMode(null); }} />;
+  if (project === "investment") return (
+    <MinesApp user={authUser} onBack={() => setProject(null)} />
+  );
+  // project === "emission" falls through to Welcome / mode routing below
+  if (!mode) return <Welcome user={authUser} onSelect={setMode} onBack={() => setProject(null)} onLogout={() => { setAuthUser(null); setProject(null); setMode(null); }} />;
   if (mode === "scope") return (
     <ScopeModeling
       user={authUser}
       onBack={() => setMode(null)}
-      onLogout={() => { setAuthUser(null); setMode(null); }}
+      onLogout={() => { setAuthUser(null); setProject(null); setMode(null); }}
     />
   );
   if (mode === "emissions_v2") return (
     <AppV2
       user={authUser}
       onBack={() => setMode(null)}
-      onLogout={() => { setAuthUser(null); setMode(null); }}
+      onLogout={() => { setAuthUser(null); setProject(null); setMode(null); }}
     />
   );
 
@@ -766,15 +985,30 @@ export default function App() {
       <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
 
         {/* ── Navbar ── */}
-        <div style={{ background: G, padding: "0 32px", display: "flex", alignItems: "center", height: 58, gap: 16, boxShadow: "0 2px 12px rgba(26,101,133,0.3)" }}>
-          {/* Logo — leftmost, click to go home */}
-          <img
-            src="https://static.wixstatic.com/media/15f61d_291a4247c1f049ad951ee1be7efbb7b8~mv2.png/v1/fill/w_182,h_31,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Sustain360%20Logo%20-%20Blue.png"
-            alt="Sustain360"
-            onClick={() => setMode(null)}
-            style={{ height: 28, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)", flexShrink: 0, cursor: "pointer" }}
-          />
-          {/* User + logout — pushed to right */}
+        <div style={{ background: G, padding: "0 32px", display: "flex", alignItems: "center", height: 58, boxShadow: "0 2px 12px rgba(26,101,133,0.3)" }}>
+          {/* Left: Logo + Change mode */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <img
+              src="https://static.wixstatic.com/media/15f61d_291a4247c1f049ad951ee1be7efbb7b8~mv2.png/v1/fill/w_182,h_31,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Sustain360%20Logo%20-%20Blue.png"
+              alt="Sustain360"
+              onClick={() => { setMode(null); setProject(null); }}
+              style={{ height: 28, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)", flexShrink: 0, cursor: "pointer" }}
+            />
+            <div style={{ width: 1, height: 22, background: "rgba(255,255,255,0.2)" }} />
+            <button onClick={() => { setMode(null); setResult(null); setError(null); }} style={{
+              background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)",
+              borderRadius: 8, color: "#e0f7fa", fontSize: 12, fontWeight: 600,
+              padding: "5px 14px", cursor: "pointer", fontFamily: "inherit",
+              display: "flex", alignItems: "center", gap: 6,
+            }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.22)"}
+              onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              Change mode
+            </button>
+          </div>
+          {/* Right: User + logout */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", borderRadius: 20, padding: "5px 14px 5px 8px" }}>
               <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff" }}>
@@ -782,7 +1016,7 @@ export default function App() {
               </div>
               <span style={{ fontSize: 13, fontWeight: 600, color: "#e0f7fa" }}>{authUser}</span>
             </div>
-            <button onClick={() => { setAuthUser(null); setMode(null); }} style={{
+            <button onClick={() => { setAuthUser(null); setProject(null); setMode(null); }} style={{
               background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)",
               borderRadius: 8, color: "#e0f7fa", fontSize: 12, fontWeight: 600,
               padding: "5px 12px", cursor: "pointer", fontFamily: "inherit",
@@ -806,19 +1040,6 @@ export default function App() {
 
           {/* ════════════════ LEFT (60%) ════════════════ */}
           <div style={{ flex: "0 0 60%", display: "flex", flexDirection: "column", gap: 20 }}>
-
-            {/* Mode switch link */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <button onClick={() => { setMode(null); setResult(null); setError(null); }} style={{
-                background: "none", border: "none", cursor: "pointer", fontFamily: "inherit",
-                fontSize: 12.5, color: "#1e7093", fontWeight: 600, display: "flex", alignItems: "center", gap: 5, padding: 0,
-              }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-                Change mode
-              </button>
-              <span style={{ fontSize: 11, color: "#94a3b8" }}>·</span>
-              <span style={{ fontSize: 12, color: "#94a3b8" }}>{mode === "natural" ? "Conversational Modeling" : "Parametric Modeling"}</span>
-            </div>
 
             {mode === "natural" ? (
               /* ── Natural Language panel ── */

@@ -870,9 +870,25 @@ export default function ScopeModeling({ user, onBack, onLogout }) {
     <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
 
       {/* Navbar */}
-      <div style={{ background: G, padding: "0 32px", display: "flex", alignItems: "center", height: 58, gap: 16, boxShadow: "0 2px 12px rgba(1,88,124,0.3)" }}>
-        <img src="https://static.wixstatic.com/media/15f61d_291a4247c1f049ad951ee1be7efbb7b8~mv2.png/v1/fill/w_182,h_31,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Sustain360%20Logo%20-%20Blue.png"
-          alt="Sustain360" style={{ height: 28, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)", flexShrink: 0 }} />
+      <div style={{ background: G, padding: "0 32px", display: "flex", alignItems: "center", height: 58, boxShadow: "0 2px 12px rgba(1,88,124,0.3)" }}>
+        {/* Left: Logo + Change mode */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <img src="https://static.wixstatic.com/media/15f61d_291a4247c1f049ad951ee1be7efbb7b8~mv2.png/v1/fill/w_182,h_31,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Sustain360%20Logo%20-%20Blue.png"
+            alt="Sustain360" style={{ height: 28, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)", flexShrink: 0 }} />
+          <div style={{ width: 1, height: 22, background: "rgba(255,255,255,0.2)" }} />
+          <button onClick={onBack} style={{
+            background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)",
+            borderRadius: 8, color: "#e0f7fa", fontSize: 12, fontWeight: 600,
+            padding: "5px 14px", cursor: "pointer", fontFamily: "inherit",
+            display: "flex", alignItems: "center", gap: 6,
+          }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.22)"}
+            onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            Change mode
+          </button>
+        </div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", borderRadius: 20, padding: "5px 14px 5px 8px" }}>
             <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff" }}>{user[0].toUpperCase()}</div>
@@ -912,12 +928,6 @@ export default function ScopeModeling({ user, onBack, onLogout }) {
       </div>
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 32px" }}>
-
-        {/* Back link */}
-        <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, color: "#1e7093", fontWeight: 600, display: "flex", alignItems: "center", gap: 5, padding: 0, marginBottom: 20 }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-          Change mode
-        </button>
 
         {/* ── SIMULATION TAB ── */}
         {pageTab === "simulation" && (
