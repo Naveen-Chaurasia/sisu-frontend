@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   ScatterChart, Scatter, ZAxis, Treemap,
-  ReferenceLine, RadialBarChart, RadialBar,
+  ReferenceLine,
 } from "recharts";
 import { THEME, CHART_COLORS, fmtMoney, fmtPct, fmtX, fmtNum } from "./constants";
 import { fetchMinesList, calculateMine } from "./api";
@@ -155,22 +155,356 @@ export default function MineRegistry({ mines: initialMines, onSelectMine, onRefr
 
   return (
     <div style={{ padding: "28px 32px", background: THEME.bg }}>
-      {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: THEME.primaryDark }}>
-          Mine Registry
-        </h2>
-        <p style={{ margin: "4px 0 0", fontSize: 13, color: THEME.muted }}>
+      {/* ── Header ── */}
+      <div style={{ marginBottom: 24, textAlign: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 4 }}>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: THEME.primaryDark }}>
+            Mine Registry
+          </h2>
+          <div style={{ width: 1, height: 20, background: THEME.border }} />
+          <span style={{ fontSize: 16, fontWeight: 700, color: THEME.primary }}>
+            Portfolio Analytics
+          </span>
+        </div>
+        <p style={{ margin: 0, fontSize: 13, color: THEME.muted }}>
           Mozambique critical minerals portfolio · {mines.length} assets
         </p>
       </div>
+
+      {chartMines.length > 0 && (() => {
+        const validIrr = chartMines.filter(m => m.irr != null);
+        const minIrr = validIrr.length ? Math.min(...validIrr.map(m => m.irr)) : 0;
+        const maxIrr = validIrr.length ? Math.max(...validIrr.map(m => m.irr)) : 1;
+
+        // ── Scatter data (NPV vs IRR, size = total revenue proxy)
+        const scatterData = chartMines
+          .filter(m => m.npv != null && m.irr != null)
+          .map((m, i) => ({
+            x: parseFloat((m.irr * 100).toFixed(1)),
+            y: Math.round(m.npv / 1e6),
+            z: Math.max(30, Math.min(800, ((m.total_lom_revenue || m.npv) / 1e7))),
+            r: Math.max(5, Math.min(22, Math.sqrt((m.total_lom_revenue || m.npv) / 1e7) * 3)),
+            name: m.mine_name,
+            npv: m.npv,
+            irr: m.irr,
+            fill: CHART_COLORS[i % CHART_COLORS.length],
+          }));
+
+        // ── Treemap data (sized by NPV, colored by IRR)
+        const treemapData = chartMines
+          .filter(m => m.npv != null)
+          .map(m => ({
+            name: m.mine_name,
+            value: m.npv,
+            irr: m.irr,
+            irrPct: m.irr != null ? (m.irr - minIrr) / Math.max(maxIrr - minIrr, 0.01) : null,
+          }))
+          .sort((a, b) => b.value - a.value);
+
+        // ── Lollipop data (payback, ascending = fastest first)
+        const lollipopData = chartMines
+          .filter(m => m.payback_period != null)
+          .map((m, i) => ({
+            name: shortName(m.mine_name),
+            value: m.payback_period,
+            fill: CHART_COLORS[i % CHART_COLORS.length],
+          }))
+          .sort((a, b) => a.value - b.value);
+
+        // ── Radial data (MOIC)
+        const maxMoic = Math.max(...chartMines.filter(m => m.moic != null).map(m => m.moic), 1);
+        const radialData = chartMines
+          .filter(m => m.moic != null)
+          .map((m, i) => ({
+            name: shortName(m.mine_name),
+            value: m.moic,
+            pct: Math.round((m.moic / maxMoic) * 100),
+            fill: CHART_COLORS[i % CHART_COLORS.length],
+          }))
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 9);
+
+        const card = {
+          background: THEME.card, borderRadius: 14,
+          border: `1px solid ${THEME.border}`,
+          padding: "20px 22px",
+          boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+        };
+        const cardTitle = {
+          fontSize: 13, fontWeight: 700, color: THEME.primaryDark,
+          marginBottom: 4, letterSpacing: 0.1,
+        };
+        const cardSub = { fontSize: 11, color: THEME.muted, marginBottom: 14 };
+
+        return (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+
+              {/* ── 1. Risk/Return Bubble Scatter ─────────────────── */}
+              <div style={card}>
+                <div style={cardTitle}>Risk / Return Map</div>
+                <div style={cardSub}>NPV ($M) vs IRR (%) · bubble size = revenue scale</div>
+                <ResponsiveContainer width="100%" height={340}>
+                  <ScatterChart margin={{ top: 16, right: 24, bottom: 28, left: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis
+                      dataKey="x" type="number" name="IRR"
+                      label={{ value: "IRR (%)", position: "insideBottomRight", offset: -4, fontSize: 10, fill: THEME.muted }}
+                      tick={{ fontSize: 10, fill: THEME.muted }}
+                      domain={["auto", "auto"]}
+                    />
+                    <YAxis
+                      dataKey="y" type="number" name="NPV"
+                      tickFormatter={v => v >= 1000 ? `$${(v/1000).toFixed(1)}B` : `$${v}M`}
+                      tick={{ fontSize: 10, fill: THEME.muted }} width={52}
+                    />
+                    <ZAxis dataKey="z" range={[60, 900]} />
+                    <Tooltip
+                      cursor={{ strokeDasharray: "3 3" }}
+                      content={({ payload }) => {
+                        if (!payload?.length) return null;
+                        const d = payload[0].payload;
+                        return (
+                          <div style={{
+                            background: "#fff", border: `1px solid ${THEME.border}`,
+                            borderRadius: 8, padding: "8px 12px", fontSize: 11,
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                          }}>
+                            <div style={{ fontWeight: 700, marginBottom: 4 }}>{d.name}</div>
+                            <div>NPV: <b>{fmtMoney(d.npv)}</b></div>
+                            <div>IRR: <b>{fmtPct(d.irr)}</b></div>
+                          </div>
+                        );
+                      }}
+                    />
+                    <Scatter data={scatterData} shape={<ScatterDot />} />
+                  </ScatterChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* ── 2. NPV Horizontal Bar ────────────────────────── */}
+              <div style={card}>
+                <div style={cardTitle}>Portfolio Allocation by NPV</div>
+                <div style={cardSub}>Sorted by NPV · color = IRR tier (green=high, blue=mid, orange=low)</div>
+                <ResponsiveContainer width="100%" height={340}>
+                  <BarChart
+                    layout="vertical"
+                    data={treemapData.map(m => ({
+                      name: shortName(m.name),
+                      value: Math.round(m.value / 1e6),
+                      raw: m.value,
+                      irr: m.irr,
+                      irrPct: m.irrPct,
+                    }))}
+                    margin={{ top: 4, right: 56, bottom: 4, left: 4 }}
+                    barCategoryGap="18%"
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                    <XAxis
+                      type="number"
+                      tick={{ fontSize: 10, fill: THEME.muted }}
+                      tickFormatter={v => v >= 1000 ? `$${(v / 1000).toFixed(1)}B` : `$${v}M`}
+                    />
+                    <YAxis
+                      type="category" dataKey="name" width={82}
+                      tick={{ fontSize: 10, fill: "#475569" }}
+                    />
+                    <Tooltip
+                      content={({ payload }) => {
+                        if (!payload?.length) return null;
+                        const d = payload[0].payload;
+                        return (
+                          <div style={{
+                            background: "#fff", border: `1px solid ${THEME.border}`,
+                            borderRadius: 8, padding: "8px 12px", fontSize: 11,
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                          }}>
+                            <div style={{ fontWeight: 700, marginBottom: 4 }}>{d.name}</div>
+                            <div>NPV: <b>{fmtMoney(d.raw)}</b></div>
+                            {d.irr != null && <div>IRR: <b>{fmtPct(d.irr)}</b></div>}
+                          </div>
+                        );
+                      }}
+                    />
+                    <Bar dataKey="value" radius={[0, 5, 5, 0]}
+                      label={{ position: "right", fontSize: 9, fill: THEME.muted,
+                        formatter: v => v >= 1000 ? `$${(v/1000).toFixed(1)}B` : `$${v}M` }}
+                    >
+                      {treemapData.map((d, i) => {
+                        const p = d.irrPct ?? 0.5;
+                        const fill = p > 0.65 ? "#059669" : p > 0.35 ? "#0ea5e9" : "#f97316";
+                        return <Cell key={i} fill={fill} />;
+                      })}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* ── 3. Payback Lollipop ───────────────────────────── */}
+              <div style={card}>
+                <div style={cardTitle}>Payback Period Ranking</div>
+                <div style={cardSub}>Years to recover investment · dashed line = 5yr hurdle</div>
+                <ResponsiveContainer width="100%" height={340}>
+                  <BarChart
+                    layout="vertical"
+                    data={lollipopData}
+                    margin={{ top: 8, right: 44, bottom: 8, left: 0 }}
+                    barCategoryGap="38%"
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                    <XAxis
+                      type="number"
+                      tick={{ fontSize: 10, fill: THEME.muted }}
+                      tickFormatter={v => `${v}yr`}
+                      domain={[0, "dataMax + 1"]}
+                    />
+                    <YAxis
+                      type="category" dataKey="name" width={80}
+                      tick={{ fontSize: 10, fill: "#475569" }}
+                    />
+                    <Tooltip
+                      formatter={(v) => [`${v} years`, "Payback"]}
+                      contentStyle={{ fontSize: 12, borderRadius: 8, border: `1px solid ${THEME.border}` }}
+                    />
+                    <ReferenceLine x={5} stroke="#ef4444" strokeDasharray="4 3"
+                      label={{ value: "5yr", position: "top", fontSize: 10, fill: "#ef4444" }} />
+                    <Bar dataKey="value" shape={<LollipopShape />} barSize={16}>
+                      {lollipopData.map((d, i) => (
+                        <Cell key={i} fill={d.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* ── 4. MOIC Bullet Chart ─────────────────────────── */}
+              <div style={card}>
+                <div style={cardTitle}>MOIC — Return Multiple</div>
+                <div style={cardSub}>Bullet chart · bands: Poor / Moderate / Good / Strong / Excellent · red line = 3× hurdle</div>
+                {(() => {
+                  const bulletData = chartMines
+                    .filter(m => m.moic != null)
+                    .map((m, i) => ({
+                      name: shortName(m.mine_name),
+                      value: m.moic,
+                      fill: CHART_COLORS[i % CHART_COLORS.length],
+                    }))
+                    .sort((a, b) => b.value - a.value);
+
+                  const domainMax = Math.ceil(Math.max(...bulletData.map(d => d.value)) * 1.1);
+                  const BANDS = [
+                    { limit: 1,         bg: "#fee2e2", label: "Poor",      tc: "#ef4444" },
+                    { limit: 3,         bg: "#fef3c7", label: "Moderate",  tc: "#f59e0b" },
+                    { limit: 6,         bg: "#dbeafe", label: "Good",      tc: "#3b82f6" },
+                    { limit: 10,        bg: "#dcfce7", label: "Strong",    tc: "#10b981" },
+                    { limit: domainMax, bg: "#bbf7d0", label: "Excellent", tc: "#059669" },
+                  ];
+
+                  function getTier(v) {
+                    return v < 1 ? BANDS[0] : v < 3 ? BANDS[1] : v < 6 ? BANDS[2] : v < 10 ? BANDS[3] : BANDS[4];
+                  }
+
+                  const tickVals = [0, 1, 3, 6, 10, domainMax].filter((v, i, a) => a.indexOf(v) === i && v <= domainMax);
+
+                  return (
+                    <div style={{ marginTop: 6 }}>
+                      {/* X-axis ticks */}
+                      <div style={{ display: "flex", marginLeft: 88, marginBottom: 4, position: "relative", height: 14 }}>
+                        {tickVals.map(v => (
+                          <div key={v} style={{
+                            position: "absolute",
+                            left: `${(v / domainMax) * 100}%`,
+                            fontSize: 9, color: THEME.muted, transform: "translateX(-50%)",
+                          }}>{v}x</div>
+                        ))}
+                      </div>
+
+                      {/* Rows */}
+                      {bulletData.map((mine, i) => {
+                        const tier = getTier(mine.value);
+                        const pct = (mine.value / domainMax) * 100;
+                        const hurdlePct = (3 / domainMax) * 100;
+                        return (
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9 }}>
+                            {/* Name */}
+                            <div style={{
+                              width: 84, fontSize: 10, fontWeight: 600,
+                              color: "#334155", textAlign: "right", flexShrink: 0,
+                              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                            }}>{mine.name}</div>
+
+                            {/* Bar track */}
+                            <div style={{ flex: 1, position: "relative", height: 22, borderRadius: 4, overflow: "visible" }}>
+                              {/* Background bands */}
+                              <div style={{ position: "absolute", inset: 0, display: "flex", borderRadius: 4, overflow: "hidden" }}>
+                                {BANDS.map((band, bi) => {
+                                  const prev = bi === 0 ? 0 : BANDS[bi - 1].limit;
+                                  const w = ((Math.min(band.limit, domainMax) - prev) / domainMax) * 100;
+                                  return <div key={bi} style={{ width: `${w}%`, background: band.bg, flexShrink: 0 }} />;
+                                })}
+                              </div>
+
+                              {/* Feature bar */}
+                              <div style={{
+                                position: "absolute", left: 0, top: "22%",
+                                width: `${pct}%`, height: "56%",
+                                background: mine.fill, borderRadius: "0 3px 3px 0",
+                                zIndex: 2, transition: "width 0.4s ease",
+                              }} />
+
+                              {/* 3× hurdle marker */}
+                              <div style={{
+                                position: "absolute", left: `${hurdlePct}%`, top: -2,
+                                width: 2, height: "calc(100% + 4px)",
+                                background: "#ef4444", zIndex: 3, borderRadius: 1,
+                              }} />
+                            </div>
+
+                            {/* Value */}
+                            <div style={{ width: 36, fontSize: 11, fontWeight: 700, color: mine.fill, textAlign: "right", flexShrink: 0 }}>
+                              {mine.value.toFixed(1)}x
+                            </div>
+
+                            {/* Tier badge */}
+                            <div style={{
+                              fontSize: 9, fontWeight: 700, padding: "2px 7px",
+                              borderRadius: 10, background: `${tier.tc}18`,
+                              color: tier.tc, flexShrink: 0, minWidth: 54, textAlign: "center",
+                              border: `1px solid ${tier.tc}33`,
+                            }}>{tier.label}</div>
+                          </div>
+                        );
+                      })}
+
+                      {/* Band legend */}
+                      <div style={{ display: "flex", gap: 10, marginTop: 10, marginLeft: 88, flexWrap: "wrap" }}>
+                        {BANDS.map(b => (
+                          <div key={b.label} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: b.tc }}>
+                            <div style={{ width: 10, height: 10, borderRadius: 2, background: b.bg, border: `1px solid ${b.tc}33` }} />
+                            {b.label}
+                          </div>
+                        ))}
+                        <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: "#ef4444" }}>
+                          <div style={{ width: 2, height: 10, background: "#ef4444", borderRadius: 1 }} />
+                          3× hurdle
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+            </div>
+          </>
+        );
+      })()}
 
       {/* Table */}
       <div style={{
         background: THEME.card, borderRadius: 12,
         border: `1px solid ${THEME.border}`,
         boxShadow: "0 1px 6px rgba(0,0,0,0.05)",
-        overflow: "hidden", marginBottom: 32,
+        overflow: "hidden", marginTop: 32,
       }}>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
@@ -256,241 +590,6 @@ export default function MineRegistry({ mines: initialMines, onSelectMine, onRefr
           </table>
         </div>
       </div>
-
-      {/* ── Portfolio Analytics ── */}
-      {chartMines.length > 0 && (() => {
-        const validIrr = chartMines.filter(m => m.irr != null);
-        const minIrr = validIrr.length ? Math.min(...validIrr.map(m => m.irr)) : 0;
-        const maxIrr = validIrr.length ? Math.max(...validIrr.map(m => m.irr)) : 1;
-
-        // ── Scatter data (NPV vs IRR, size = total revenue proxy)
-        const scatterData = chartMines
-          .filter(m => m.npv != null && m.irr != null)
-          .map((m, i) => ({
-            x: parseFloat((m.irr * 100).toFixed(1)),
-            y: Math.round(m.npv / 1e6),
-            z: Math.max(30, Math.min(800, ((m.total_lom_revenue || m.npv) / 1e7))),
-            r: Math.max(5, Math.min(22, Math.sqrt((m.total_lom_revenue || m.npv) / 1e7) * 3)),
-            name: m.mine_name,
-            npv: m.npv,
-            irr: m.irr,
-            fill: CHART_COLORS[i % CHART_COLORS.length],
-          }));
-
-        // ── Treemap data (sized by NPV, colored by IRR)
-        const treemapData = chartMines
-          .filter(m => m.npv != null)
-          .map(m => ({
-            name: m.mine_name,
-            value: m.npv,
-            irr: m.irr,
-            irrPct: m.irr != null ? (m.irr - minIrr) / Math.max(maxIrr - minIrr, 0.01) : null,
-          }))
-          .sort((a, b) => b.value - a.value);
-
-        // ── Lollipop data (payback, ascending = fastest first)
-        const lollipopData = chartMines
-          .filter(m => m.payback_period != null)
-          .map((m, i) => ({
-            name: shortName(m.mine_name),
-            value: m.payback_period,
-            fill: CHART_COLORS[i % CHART_COLORS.length],
-          }))
-          .sort((a, b) => a.value - b.value);
-
-        // ── Radial data (MOIC)
-        const maxMoic = Math.max(...chartMines.filter(m => m.moic != null).map(m => m.moic), 1);
-        const radialData = chartMines
-          .filter(m => m.moic != null)
-          .map((m, i) => ({
-            name: shortName(m.mine_name),
-            value: m.moic,
-            pct: Math.round((m.moic / maxMoic) * 100),
-            fill: CHART_COLORS[i % CHART_COLORS.length],
-          }))
-          .sort((a, b) => b.value - a.value)
-          .slice(0, 9);
-
-        const card = {
-          background: THEME.card, borderRadius: 14,
-          border: `1px solid ${THEME.border}`,
-          padding: "20px 22px",
-          boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
-        };
-        const cardTitle = {
-          fontSize: 13, fontWeight: 700, color: THEME.primaryDark,
-          marginBottom: 4, letterSpacing: 0.1,
-        };
-        const cardSub = { fontSize: 11, color: THEME.muted, marginBottom: 14 };
-
-        return (
-          <>
-            <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 700, color: THEME.primaryDark }}>
-              Portfolio Analytics
-            </h3>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-
-              {/* ── 1. Risk/Return Bubble Scatter ─────────────────── */}
-              <div style={card}>
-                <div style={cardTitle}>Risk / Return Map</div>
-                <div style={cardSub}>NPV ($M) vs IRR (%) · bubble size = revenue scale</div>
-                <ResponsiveContainer width="100%" height={230}>
-                  <ScatterChart margin={{ top: 8, right: 16, bottom: 20, left: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis
-                      dataKey="x" type="number" name="IRR"
-                      label={{ value: "IRR (%)", position: "insideBottomRight", offset: -4, fontSize: 10, fill: THEME.muted }}
-                      tick={{ fontSize: 10, fill: THEME.muted }}
-                      domain={["auto", "auto"]}
-                    />
-                    <YAxis
-                      dataKey="y" type="number" name="NPV"
-                      tickFormatter={v => v >= 1000 ? `$${(v/1000).toFixed(1)}B` : `$${v}M`}
-                      tick={{ fontSize: 10, fill: THEME.muted }} width={52}
-                    />
-                    <ZAxis dataKey="z" range={[60, 900]} />
-                    <Tooltip
-                      cursor={{ strokeDasharray: "3 3" }}
-                      content={({ payload }) => {
-                        if (!payload?.length) return null;
-                        const d = payload[0].payload;
-                        return (
-                          <div style={{
-                            background: "#fff", border: `1px solid ${THEME.border}`,
-                            borderRadius: 8, padding: "8px 12px", fontSize: 11,
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                          }}>
-                            <div style={{ fontWeight: 700, marginBottom: 4 }}>{d.name}</div>
-                            <div>NPV: <b>{fmtMoney(d.npv)}</b></div>
-                            <div>IRR: <b>{fmtPct(d.irr)}</b></div>
-                          </div>
-                        );
-                      }}
-                    />
-                    <Scatter data={scatterData} shape={<ScatterDot />} />
-                  </ScatterChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* ── 2. NPV Treemap ────────────────────────────────── */}
-              <div style={card}>
-                <div style={cardTitle}>Portfolio Allocation by NPV</div>
-                <div style={cardSub}>Area ∝ NPV · color = IRR tier (green=high, blue=mid, orange=low)</div>
-                <ResponsiveContainer width="100%" height={230}>
-                  <Treemap
-                    data={treemapData}
-                    dataKey="value"
-                    nameKey="name"
-                    aspectRatio={4 / 3}
-                    content={<TreemapContent />}
-                  >
-                    <Tooltip
-                      content={({ payload }) => {
-                        if (!payload?.length) return null;
-                        const d = payload[0].payload;
-                        return (
-                          <div style={{
-                            background: "#fff", border: `1px solid ${THEME.border}`,
-                            borderRadius: 8, padding: "8px 12px", fontSize: 11,
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                          }}>
-                            <div style={{ fontWeight: 700, marginBottom: 4 }}>{d.name}</div>
-                            <div>NPV: <b>{fmtMoney(d.value)}</b></div>
-                            {d.irr != null && <div>IRR: <b>{fmtPct(d.irr)}</b></div>}
-                          </div>
-                        );
-                      }}
-                    />
-                  </Treemap>
-                </ResponsiveContainer>
-              </div>
-
-              {/* ── 3. Payback Lollipop ───────────────────────────── */}
-              <div style={card}>
-                <div style={cardTitle}>Payback Period Ranking</div>
-                <div style={cardSub}>Years to recover investment · dashed line = 5yr hurdle</div>
-                <ResponsiveContainer width="100%" height={230}>
-                  <BarChart
-                    layout="vertical"
-                    data={lollipopData}
-                    margin={{ top: 4, right: 36, bottom: 4, left: 0 }}
-                    barCategoryGap="30%"
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                    <XAxis
-                      type="number"
-                      tick={{ fontSize: 10, fill: THEME.muted }}
-                      tickFormatter={v => `${v}yr`}
-                      domain={[0, "dataMax + 1"]}
-                    />
-                    <YAxis
-                      type="category" dataKey="name" width={80}
-                      tick={{ fontSize: 10, fill: "#475569" }}
-                    />
-                    <Tooltip
-                      formatter={(v) => [`${v} years`, "Payback"]}
-                      contentStyle={{ fontSize: 12, borderRadius: 8, border: `1px solid ${THEME.border}` }}
-                    />
-                    <ReferenceLine x={5} stroke="#ef4444" strokeDasharray="4 3"
-                      label={{ value: "5yr", position: "top", fontSize: 10, fill: "#ef4444" }} />
-                    <Bar dataKey="value" shape={<LollipopShape />} barSize={16}>
-                      {lollipopData.map((d, i) => (
-                        <Cell key={i} fill={d.fill} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* ── 4. MOIC Radial Bar ────────────────────────────── */}
-              <div style={card}>
-                <div style={cardTitle}>MOIC — Return Multiple</div>
-                <div style={cardSub}>Multiple on invested capital · arc length ∝ MOIC</div>
-                <ResponsiveContainer width="100%" height={230}>
-                  <RadialBarChart
-                    innerRadius="12%"
-                    outerRadius="95%"
-                    data={radialData}
-                    startAngle={180}
-                    endAngle={0}
-                  >
-                    <RadialBar
-                      dataKey="value"
-                      cornerRadius={4}
-                      background={{ fill: "#f1f5f9" }}
-                      label={{
-                        position: "insideStart",
-                        fill: "#fff",
-                        fontSize: 9,
-                        fontWeight: 700,
-                        formatter: (v) => `${v}x`,
-                      }}
-                    >
-                      {radialData.map((d, i) => (
-                        <Cell key={i} fill={d.fill} />
-                      ))}
-                    </RadialBar>
-                    <Tooltip
-                      formatter={(v, _n, props) => [`${v}x`, props.payload.name]}
-                      contentStyle={{ fontSize: 12, borderRadius: 8, border: `1px solid ${THEME.border}` }}
-                    />
-                  </RadialBarChart>
-                </ResponsiveContainer>
-                {/* Legend */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", marginTop: 6 }}>
-                  {radialData.map((d, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "#475569" }}>
-                      <div style={{ width: 8, height: 8, borderRadius: 2, background: d.fill, flexShrink: 0 }} />
-                      {d.name}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-            </div>
-          </>
-        );
-      })()}
     </div>
   );
 }

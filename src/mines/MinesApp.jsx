@@ -12,13 +12,13 @@ import { fetchMinesList } from "./api";
 
 const NAV_ITEMS = [
   { id: "registry",     label: "Mine Registry",       icon: IconGrid      },
-  { id: "profile",      label: "Mine Profile",         icon: IconUser      },
   { id: "financial",    label: "Financial Model",      icon: IconTable     },
   { id: "waterfall",    label: "NPV Bridge",           icon: IconWaterfall },
   { id: "sensitivity",  label: "Sensitivity Analysis", icon: IconTornado   },
   { id: "monte",        label: "Monte Carlo",           icon: IconDice      },
-  { id: "minerals",     label: "Minerals Reference",   icon: IconGem       },
   { id: "map",          label: "Mine Map",              icon: IconMap       },
+  { id: "profile",      label: "Mine Profile",         icon: IconUser      },
+  { id: "minerals",     label: "Minerals Reference",   icon: IconGem       },
 ];
 
 // ── Inline SVG icons ──────────────────────────────────────────────────────────

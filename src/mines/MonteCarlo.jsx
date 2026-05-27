@@ -344,10 +344,14 @@ export default function MonteCarlo({ mineId }) {
               display: "flex", alignItems: "center", justifyContent: "center",
               boxShadow: "0 8px 32px rgba(30,112,147,0.15)",
             }}>
+              <style>{`@keyframes mc-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
               <img
                 src="/S360_Logo_Chakra.png"
                 alt="Chakra"
-                style={{ width: 70, height: 70, objectFit: "contain" }}
+                style={{
+                  width: 70, height: 70, objectFit: "contain",
+                  animation: running ? "mc-spin 1.2s linear infinite" : "none",
+                }}
               />
             </div>
             <div style={{ fontSize: 16, fontWeight: 700, color: t.textSub }}>Ready to Simulate</div>
