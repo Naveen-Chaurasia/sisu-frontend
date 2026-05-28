@@ -91,7 +91,7 @@ function IconChevron({ dir }) {
   );
 }
 
-export default function MinesApp2({ user, onBack }) {
+export default function MinesApp2({ user, onBack, onLogout }) {
   const [mines,       setMines]       = useState([]);
   const [mineId,      setMineId]      = useState(null);
   const [screen,      setScreen]      = useState("dcf"); // Changed default to "dcf" since it's now first
@@ -134,7 +134,8 @@ export default function MinesApp2({ user, onBack }) {
           <img
             src="/Sustain360 - Dark Blue.png"
             alt="Sustain360"
-            style={{ height: 28, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)", flexShrink: 0 }}
+            onClick={onBack}
+            style={{ height: 28, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)", flexShrink: 0, cursor: "pointer" }}
           />
           <div style={{ width: 1, height: 22, background: "rgba(255,255,255,0.2)" }} />
           <button
@@ -215,6 +216,16 @@ export default function MinesApp2({ user, onBack }) {
             }}>{user ? user[0].toUpperCase() : "U"}</div>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#e0f7fa" }}>{user}</span>
           </div>
+          {onLogout && (
+            <button onClick={onLogout}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.22)"}
+              onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}
+              style={{
+                background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)",
+                borderRadius: 8, color: "#e0f7fa", fontSize: 12, fontWeight: 600,
+                padding: "5px 12px", cursor: "pointer", fontFamily: "inherit",
+              }}>Sign out</button>
+          )}
         </div>
       </div>
 
@@ -270,7 +281,7 @@ export default function MinesApp2({ user, onBack }) {
 
             {/* Nav */}
             <nav style={{ padding: "10px 8px", flex: 1 }}>
-              {SCREENS.map(s => {
+              {(user?.toLowerCase() === "naveen" ? SCREENS : SCREENS.filter(s => s.id === "dcf")).map(s => {
                 const active = screen === s.id;
                 return (
                   <button

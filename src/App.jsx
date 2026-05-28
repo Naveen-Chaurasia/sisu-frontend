@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { supabase } from "./supabaseClient";
 import ScopeModeling from "./ScopeModeling";
 import AppV2 from "./v2/AppV2";
 import MinesApp from "./mines/MinesApp";
@@ -22,7 +24,7 @@ const GAS_UNITS = {
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 function Login({ onLogin }) {
-  const [username, setUsername] = useState("");
+  const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [error, setError]       = useState("");
   const [showPw, setShowPw]     = useState(false);
@@ -33,20 +35,18 @@ function Login({ onLogin }) {
     setLoading(true);
     setError("");
     try {
-      const resp = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: username.trim(), password }),
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
       });
-      if (resp.ok) {
-        const data = await resp.json();
-        onLogin(data.username);
+      if (authError) {
+        setError(authError.message);
       } else {
-        const data = await resp.json().catch(() => ({}));
-        setError(data.detail || "Invalid username or password.");
+        const n = data.user.email.split("@")[0];
+        onLogin(n[0].toUpperCase() + n.slice(1));
       }
     } catch {
-      setError("Cannot reach server. Is the backend running?");
+      setError("Cannot reach Supabase. Check your connection.");
     } finally {
       setLoading(false);
     }
@@ -130,12 +130,12 @@ function Login({ onLogin }) {
           <div style={{ height: 1, background: "#f1f5f9", marginBottom: 28 }} />
 
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {/* Username */}
+            {/* Email */}
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#1a6585", letterSpacing: 0.7, textTransform: "uppercase", marginBottom: 6 }}>Username</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#1a6585", letterSpacing: 0.7, textTransform: "uppercase", marginBottom: 6 }}>Email</div>
               <input
-                type="text" autoComplete="username" placeholder="Enter username"
-                value={username} onChange={e => { setUsername(e.target.value); setError(""); }}
+                type="email" autoComplete="email" placeholder="Enter email"
+                value={email} onChange={e => { setEmail(e.target.value); setError(""); }}
                 style={inputStyle}
                 onFocus={e => e.target.style.borderColor = "#1e7093"}
                 onBlur={e => e.target.style.borderColor = "#e2e8f0"}
@@ -199,7 +199,7 @@ function Welcome({ user, onSelect, onLogout, onBack }) {
     <div style={{ background: G, padding: "0 32px", display: "flex", alignItems: "center", height: 58, boxShadow: "0 2px 12px rgba(26,101,133,0.3)" }}>
       {/* Left: Logo + Projects button */}
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <img src="https://static.wixstatic.com/media/15f61d_291a4247c1f049ad951ee1be7efbb7b8~mv2.png/v1/fill/w_182,h_31,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Sustain360%20Logo%20-%20Blue.png" alt="Sustain360" style={{ height: 28, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)" }} />
+        <img src="https://static.wixstatic.com/media/15f61d_291a4247c1f049ad951ee1be7efbb7b8~mv2.png/v1/fill/w_182,h_31,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Sustain360%20Logo%20-%20Blue.png" alt="Sustain360" onClick={onBack} style={{ height: 28, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)", cursor: "pointer" }} />
         <div style={{ width: 1, height: 22, background: "rgba(255,255,255,0.2)" }} />
         <button onClick={onBack} style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, color: "#e0f7fa", fontSize: 12, fontWeight: 600, padding: "5px 14px", cursor: "pointer", fontFamily: "inherit" }}
           onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.22)"}
@@ -285,14 +285,15 @@ function Welcome({ user, onSelect, onLogout, onBack }) {
         <div style={{ position: "absolute", top: -40, right: -40, width: 220, height: 220, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.07)", pointerEvents: "none" }} />
         <div style={{ position: "absolute", bottom: -100, left: -60, width: 320, height: 320, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.04)", pointerEvents: "none" }} />
 
-        <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 1000 }}>
-          <img src="/Sustain360 - Dark Blue.png" alt="Sustain360"
-            style={{ height: 48, objectFit: "contain", marginBottom: 24, filter: "brightness(0) invert(1)", opacity: 0.9 }} />
-
-          <h1 style={{ fontSize: 40, fontWeight: 900, color: "#fff", margin: "0 0 14px", letterSpacing: -0.8, lineHeight: 1.15 }}>
-            National Emission<br />
-            <span style={{ color: "#67c5e0" }}>Decarbonization Modeling</span>
-          </h1>
+        <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 1200 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 14, justifyContent: "center" }}>
+            <img src="/Sustain360 - Dark Blue.png" alt="Sustain360"
+              style={{ height: 52, objectFit: "contain", filter: "brightness(0) invert(1)", opacity: 0.9, flexShrink: 0 }} />
+            <h1 style={{ fontSize: 40, fontWeight: 900, color: "#fff", margin: 0, letterSpacing: -0.8, lineHeight: 1.15, textAlign: "left" }}>
+              National Emission<br />
+              <span style={{ color: "#67c5e0" }}>Decarbonization Modeling</span>
+            </h1>
+          </div>
           <p style={{ fontSize: 15.5, color: "rgba(255,255,255,0.6)", lineHeight: 1.8, maxWidth: 500, margin: "0 auto 32px" }}>
             Design, simulate, and evaluate national transport decarbonization strategies with AI-powered climate impact insights. Powered by Sustain360.ai
           </p>
@@ -414,7 +415,6 @@ function Welcome({ user, onSelect, onLogout, onBack }) {
 
 // ── Project Selector ─────────────────────────────────────────────────────────
 function ProjectSelector({ user, onSelect, onLogout }) {
-  const [expandedInvestment, setExpandedInvestment] = useState(false);
   const PROJECTS = [
     {
       id: "emission",
@@ -541,7 +541,9 @@ function ProjectSelector({ user, onSelect, onLogout }) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, maxWidth: 720, margin: "0 auto" }}>
             {PROJECTS.map(p => (
               <div key={p.id} className="proj-border-wrap"
-                onClick={p.id === "investment" ? () => setExpandedInvestment(x => !x) : () => onSelect(p.id)}
+                onClick={p.id === "investment"
+                  ? (user?.toLowerCase() !== "naveen" ? () => onSelect("investment_supabase") : undefined)
+                  : () => onSelect(p.id)}
               >
                 <div className="proj-card-inner">
                   <div style={{ width: 52, height: 52, borderRadius: 14, background: `${p.color}18`, border: `1px solid ${p.color}30`, display: "flex", alignItems: "center", justifyContent: "center", color: p.color }}>
@@ -555,40 +557,48 @@ function ProjectSelector({ user, onSelect, onLogout }) {
                     {p.badge}
                   </div>
 
-                  {p.id === "investment" && expandedInvestment ? (
-                    <div style={{ display: "flex", gap: 10, width: "100%", marginTop: 4 }} onClick={e => e.stopPropagation()}>
-                      <button
-                        onClick={() => onSelect("investment")}
-                        style={{
-                          flex: 1, padding: "9px 10px", borderRadius: 10, border: `2px solid #0f4c6b`,
-                          background: "#0f4c6b", color: "#fff", fontSize: 12, fontWeight: 700,
-                          cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.background = "#0a3655"}
-                        onMouseLeave={e => e.currentTarget.style.background = "#0f4c6b"}
-                      >
-                        Classic (No DB)
-                      </button>
-                      <button
-                        onClick={() => onSelect("investment_supabase")}
-                        style={{
-                          flex: 1, padding: "9px 10px", borderRadius: 10, border: `2px solid #3ecf8e`,
-                          background: "#3ecf8e", color: "#fff", fontSize: 12, fontWeight: 700,
-                          cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.background = "#28b377"}
-                        onMouseLeave={e => e.currentTarget.style.background = "#3ecf8e"}
-                      >
-                        Supabase DB
-                      </button>
+                  {p.id === "investment" ? (
+                    <div style={{ width: "100%", marginTop: 4 }} onClick={e => e.stopPropagation()}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 700, color: p.color, marginBottom: user?.toLowerCase() === "naveen" ? 10 : 0 }}>
+                        Open Project
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                      </div>
+                      {user?.toLowerCase() === "naveen" && (
+                        <div style={{ display: "flex", gap: 10 }}>
+                          <button
+                            onClick={() => onSelect("investment")}
+                            style={{
+                              flex: 1, padding: "9px 10px", borderRadius: 10, border: `2px solid #0f4c6b`,
+                              background: "#0f4c6b", color: "#fff", fontSize: 12, fontWeight: 700,
+                              cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = "#0a3655"}
+                            onMouseLeave={e => e.currentTarget.style.background = "#0f4c6b"}
+                          >
+                            Synthetic Data
+                          </button>
+                          <button
+                            onClick={() => onSelect("investment_supabase")}
+                            style={{
+                              flex: 1, padding: "9px 10px", borderRadius: 10, border: `2px solid #1e7093`,
+                              background: "#1e7093", color: "#fff", fontSize: 12, fontWeight: 700,
+                              cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = "#165f7a"}
+                            onMouseLeave={e => e.currentTarget.style.background = "#1e7093"}
+                          >
+                            Real Data
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 700, color: p.color, marginTop: 2 }}>
-                      {p.id === "investment" ? "Choose Version" : "Open Project"}
+                      Open Project
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        {p.id === "investment" && !expandedInvestment
-                          ? <path d="M6 9l6 6 6-6"/>
-                          : <path d="M5 12h14M12 5l7 7-7 7"/>}
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
                       </svg>
                     </div>
                   )}
@@ -858,8 +868,9 @@ const sel  = { background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius:
 
 // ── App ───────────────────────────────────────────────────────────────────────
 export default function App() {
+  const navigate                        = useNavigate();
+  const location                        = useLocation();
   const [authUser, setAuthUser]         = useState(null);
-  const [project, setProject]           = useState(null);
   const [mode, setMode]                 = useState(null);
   const [region, setRegion]             = useState("costa_rica");
   const [nlText, setNlText]             = useState("");
@@ -873,6 +884,18 @@ export default function App() {
   const [policyJsonOpen, setPolicyJsonOpen] = useState(false);
   const [availableGases, setAvailableGases] = useState([]);
   const [selectedGas, setSelectedGas]   = useState(null);
+
+  // Restore session on mount and listen for auth changes
+  useEffect(() => {
+    const emailToName = e => { const n = e?.split("@")[0]; return n ? n[0].toUpperCase() + n.slice(1) : null; };
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) setAuthUser(emailToName(session.user.email));
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthUser(session ? emailToName(session.user.email) : null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Fetch available gases whenever region changes
   useEffect(() => {
@@ -927,30 +950,44 @@ export default function App() {
     ? result.data.years.map((year, i) => ({ year, Baseline: gasData.baseline[i], Policy: gasData.policy[i] }))
     : null;
 
-  if (!authUser) return <Login onLogin={u => { setAuthUser(u); setProject(null); setMode(null); }} />;
-  if (!project) return <ProjectSelector user={authUser} onSelect={setProject} onLogout={() => { setAuthUser(null); setProject(null); setMode(null); }} />;
-  if (project === "investment") return (
-    <MinesApp user={authUser} onBack={() => setProject(null)} />
-  );
-  if (project === "investment_supabase") return (
-    <MinesApp2 user={authUser} onBack={() => setProject(null)} />
-  );
-  // project === "emission" falls through to Welcome / mode routing below
-  if (!mode) return <Welcome user={authUser} onSelect={setMode} onBack={() => setProject(null)} onLogout={() => { setAuthUser(null); setProject(null); setMode(null); }} />;
-  if (mode === "scope") return (
-    <ScopeModeling
-      user={authUser}
-      onBack={() => setMode(null)}
-      onLogout={() => { setAuthUser(null); setProject(null); setMode(null); }}
-    />
-  );
-  if (mode === "emissions_v2") return (
-    <AppV2
-      user={authUser}
-      onBack={() => setMode(null)}
-      onLogout={() => { setAuthUser(null); setProject(null); setMode(null); }}
-    />
-  );
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    setAuthUser(null);
+    setMode(null);
+    navigate("/");
+  }
+
+  function handleProjectSelect(proj) {
+    setMode(null);
+    if (proj === "investment")
+      navigate("/projects/investmentmodeling", { state: { classic: true } });
+    else if (proj === "investment_supabase")
+      navigate("/projects/investmentmodeling");
+    else
+      navigate("/projects/emissionmodeling");
+  }
+
+  const { pathname } = location;
+
+  if (!authUser) return <Login onLogin={u => { setAuthUser(u); navigate("/projects"); }} />;
+  if (pathname === "/" || pathname === "/projects")
+    return <ProjectSelector user={authUser} onSelect={handleProjectSelect} onLogout={handleLogout} />;
+  if (pathname.startsWith("/projects/investmentmodeling")) {
+    if (location.state?.classic)
+      return <MinesApp user={authUser} onBack={() => navigate("/projects")} onLogout={handleLogout} />;
+    return <MinesApp2 user={authUser} onBack={() => navigate("/projects")} onLogout={handleLogout} />;
+  }
+  if (pathname.startsWith("/projects/emissionmodeling")) {
+    if (!mode) return <Welcome user={authUser} onSelect={setMode} onBack={() => navigate("/projects")} onLogout={handleLogout} />;
+    if (mode === "scope") return (
+      <ScopeModeling user={authUser} onBack={() => setMode(null)} onLogout={handleLogout} />
+    );
+    if (mode === "emissions_v2") return (
+      <AppV2 user={authUser} onBack={() => setMode(null)} onLogout={handleLogout} />
+    );
+  }
+
+  if (!pathname.startsWith("/projects/emissionmodeling")) return <Navigate to="/projects" />;
 
   return (
     <>
@@ -1030,7 +1067,7 @@ export default function App() {
             <img
               src="https://static.wixstatic.com/media/15f61d_291a4247c1f049ad951ee1be7efbb7b8~mv2.png/v1/fill/w_182,h_31,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Sustain360%20Logo%20-%20Blue.png"
               alt="Sustain360"
-              onClick={() => { setMode(null); setProject(null); }}
+              onClick={() => { setMode(null); navigate("/projects"); }}
               style={{ height: 28, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)", flexShrink: 0, cursor: "pointer" }}
             />
             <div style={{ width: 1, height: 22, background: "rgba(255,255,255,0.2)" }} />
@@ -1055,7 +1092,7 @@ export default function App() {
               </div>
               <span style={{ fontSize: 13, fontWeight: 600, color: "#e0f7fa" }}>{authUser}</span>
             </div>
-            <button onClick={() => { setAuthUser(null); setProject(null); setMode(null); }} style={{
+            <button onClick={handleLogout} style={{
               background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)",
               borderRadius: 8, color: "#e0f7fa", fontSize: 12, fontWeight: 600,
               padding: "5px 12px", cursor: "pointer", fontFamily: "inherit",

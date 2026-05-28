@@ -89,7 +89,7 @@ function IconMine() {
   </svg>;
 }
 
-export default function MinesApp({ user, onBack }) {
+export default function MinesApp({ user, onBack, onLogout }) {
   const [tab, setTab]         = useState("registry");
   const [sidebarOpen, setSB]  = useState(true);
   const [mines, setMines]     = useState([]);
@@ -122,7 +122,8 @@ export default function MinesApp({ user, onBack }) {
         <img
           src="https://static.wixstatic.com/media/15f61d_291a4247c1f049ad951ee1be7efbb7b8~mv2.png/v1/fill/w_182,h_31,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Sustain360%20Logo%20-%20Blue.png"
           alt="Sustain360"
-          style={{ height: 24, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)" }}
+          onClick={onBack}
+          style={{ height: 24, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)", cursor: "pointer" }}
         />
         <div style={{ width: 1, height: 22, background: "rgba(255,255,255,0.2)" }} />
         <button onClick={onBack} style={{
@@ -182,6 +183,16 @@ export default function MinesApp({ user, onBack }) {
           }}>{user ? user[0].toUpperCase() : "U"}</div>
           <span style={{ fontSize: 13, fontWeight: 600, color: "#e0f7fa" }}>{user}</span>
         </div>
+          {onLogout && (
+            <button onClick={onLogout}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.22)"}
+              onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}
+              style={{
+                background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)",
+                borderRadius: 8, color: "#e0f7fa", fontSize: 12, fontWeight: 600,
+                padding: "5px 12px", cursor: "pointer", fontFamily: "inherit",
+              }}>Sign out</button>
+          )}
       </div>
     </div>
   );

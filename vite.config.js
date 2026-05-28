@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       port: 5173,
+      historyApiFallback: true,
       proxy: {
         "/api":   { target: BACKEND,    changeOrigin: true },
         "/v2":    { target: BACKEND_V2, changeOrigin: true },
