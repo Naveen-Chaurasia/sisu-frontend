@@ -3,6 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import ScopeModeling from "./ScopeModeling";
 import AppV2 from "./v2/AppV2";
 import MinesApp from "./mines/MinesApp";
+import MinesApp2 from "./mines2/MinesApp2";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const G = "radial-gradient(circle at 17.9167% 91.6667%, rgb(30, 112, 147) 0%, 17.5%, rgb(26, 101, 133) 100%)";
@@ -413,6 +414,7 @@ function Welcome({ user, onSelect, onLogout, onBack }) {
 
 // ── Project Selector ─────────────────────────────────────────────────────────
 function ProjectSelector({ user, onSelect, onLogout }) {
+  const [expandedInvestment, setExpandedInvestment] = useState(false);
   const PROJECTS = [
     {
       id: "emission",
@@ -538,7 +540,9 @@ function ProjectSelector({ user, onSelect, onLogout }) {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, maxWidth: 720, margin: "0 auto" }}>
             {PROJECTS.map(p => (
-              <div key={p.id} className="proj-border-wrap" onClick={() => onSelect(p.id)}>
+              <div key={p.id} className="proj-border-wrap"
+                onClick={p.id === "investment" ? () => setExpandedInvestment(x => !x) : () => onSelect(p.id)}
+              >
                 <div className="proj-card-inner">
                   <div style={{ width: 52, height: 52, borderRadius: 14, background: `${p.color}18`, border: `1px solid ${p.color}30`, display: "flex", alignItems: "center", justifyContent: "center", color: p.color }}>
                     {p.icon}
@@ -550,12 +554,44 @@ function ProjectSelector({ user, onSelect, onLogout }) {
                   <div style={{ fontSize: 10.5, fontWeight: 700, color: p.color, background: `${p.color}14`, borderRadius: 20, padding: "3px 12px" }}>
                     {p.badge}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 700, color: p.color, marginTop: 2 }}>
-                    Open Project
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M5 12h14M12 5l7 7-7 7"/>
-                    </svg>
-                  </div>
+
+                  {p.id === "investment" && expandedInvestment ? (
+                    <div style={{ display: "flex", gap: 10, width: "100%", marginTop: 4 }} onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={() => onSelect("investment")}
+                        style={{
+                          flex: 1, padding: "9px 10px", borderRadius: 10, border: `2px solid #0f4c6b`,
+                          background: "#0f4c6b", color: "#fff", fontSize: 12, fontWeight: 700,
+                          cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#0a3655"}
+                        onMouseLeave={e => e.currentTarget.style.background = "#0f4c6b"}
+                      >
+                        Classic (No DB)
+                      </button>
+                      <button
+                        onClick={() => onSelect("investment_supabase")}
+                        style={{
+                          flex: 1, padding: "9px 10px", borderRadius: 10, border: `2px solid #3ecf8e`,
+                          background: "#3ecf8e", color: "#fff", fontSize: 12, fontWeight: 700,
+                          cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#28b377"}
+                        onMouseLeave={e => e.currentTarget.style.background = "#3ecf8e"}
+                      >
+                        Supabase DB
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 700, color: p.color, marginTop: 2 }}>
+                      {p.id === "investment" ? "Choose Version" : "Open Project"}
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        {p.id === "investment" && !expandedInvestment
+                          ? <path d="M6 9l6 6 6-6"/>
+                          : <path d="M5 12h14M12 5l7 7-7 7"/>}
+                      </svg>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -895,6 +931,9 @@ export default function App() {
   if (!project) return <ProjectSelector user={authUser} onSelect={setProject} onLogout={() => { setAuthUser(null); setProject(null); setMode(null); }} />;
   if (project === "investment") return (
     <MinesApp user={authUser} onBack={() => setProject(null)} />
+  );
+  if (project === "investment_supabase") return (
+    <MinesApp2 user={authUser} onBack={() => setProject(null)} />
   );
   // project === "emission" falls through to Welcome / mode routing below
   if (!mode) return <Welcome user={authUser} onSelect={setMode} onBack={() => setProject(null)} onLogout={() => { setAuthUser(null); setProject(null); setMode(null); }} />;
