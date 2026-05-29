@@ -53,21 +53,34 @@ const lbl = {
 
 const cardStyle = {
   background: "#fff", border: "1px solid #e2e8f0",
-  borderRadius: 12, padding: "12px 16px",
+  borderRadius: 8, padding: "4px 8px",
   boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
 };
 
 function SectorFilterDropdown({ enabledSectors, onToggleSector, onToggleAll }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
+  const [open,    setOpen]    = useState(false);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef(null);
+  const panelRef   = useRef(null);
 
   useEffect(() => {
     function handler(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (
+        triggerRef.current && !triggerRef.current.contains(e.target) &&
+        panelRef.current   && !panelRef.current.contains(e.target)
+      ) setOpen(false);
     }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  function handleOpen() {
+    if (!open && triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect();
+      setDropPos({ top: r.bottom + 6, left: r.left });
+    }
+    setOpen(o => !o);
+  }
 
   const selected = ALL_SECTORS.filter(s => enabledSectors[s]);
   const allOn    = selected.length === ALL_SECTORS.length;
@@ -79,12 +92,12 @@ function SectorFilterDropdown({ enabledSectors, onToggleSector, onToggleAll }) {
       : `${selected.length} / ${ALL_SECTORS.length} sectors`;
 
   return (
-    <div ref={ref} style={{ ...cardStyle, position: "relative", minWidth: 180 }}>
+    <div ref={triggerRef} style={{ ...cardStyle, position: "relative", minWidth: 180 }}>
       <div style={lbl}>Sectors</div>
 
       {/* Trigger button */}
       <button
-        onClick={() => setOpen(o => !o)}
+        onClick={handleOpen}
         style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
           width: "100%", padding: "7px 10px", borderRadius: 8,
@@ -98,13 +111,13 @@ function SectorFilterDropdown({ enabledSectors, onToggleSector, onToggleAll }) {
                : <IconChevronDown size={13} style={{ color: "#94a3b8", marginLeft: 8 }} />}
       </button>
 
-      {/* Dropdown panel */}
+      {/* Dropdown panel — fixed so overflow:auto on parent doesn't clip it */}
       {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 6px)", left: 0,
+        <div ref={panelRef} style={{
+          position: "fixed", top: dropPos.top, left: dropPos.left,
           background: "#fff", border: "1px solid #e2e8f0",
-          borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
-          zIndex: 999, minWidth: 200, padding: "8px 0",
+          borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+          zIndex: 9999, minWidth: 210, padding: "8px 0",
         }}>
           {/* All / None row */}
           <div style={{ display: "flex", gap: 6, padding: "4px 12px 8px", borderBottom: "1px solid #f1f5f9" }}>
@@ -120,18 +133,17 @@ function SectorFilterDropdown({ enabledSectors, onToggleSector, onToggleAll }) {
             }}>None</button>
           </div>
 
-          {/* Sector checkboxes */}
+          {/* Sector rows */}
           {ALL_SECTORS.map(sec => {
             const on  = !!enabledSectors[sec];
             const col = SECTOR_COLORS[sec];
             return (
-              <label key={sec} onClick={() => onToggleSector(sec)} style={{
+              <div key={sec} onClick={() => onToggleSector(sec)} style={{
                 display: "flex", alignItems: "center", gap: 10,
                 padding: "8px 14px", cursor: "pointer",
                 background: on ? col + "0d" : "transparent",
                 transition: "background 0.12s",
               }}>
-                {/* Checkbox tick */}
                 <span style={{
                   width: 16, height: 16, borderRadius: 4, flexShrink: 0,
                   border: on ? `2px solid ${col}` : "2px solid #cbd5e1",
@@ -145,7 +157,7 @@ function SectorFilterDropdown({ enabledSectors, onToggleSector, onToggleAll }) {
                 <span style={{ fontSize: 13, fontWeight: 600, color: on ? col : "#64748b" }}>
                   {SECTOR_LABELS[sec]}
                 </span>
-              </label>
+              </div>
             );
           })}
         </div>
@@ -159,7 +171,7 @@ export default function AppV2({ user, onBack, onLogout }) {
   const [region,         setRegion]         = useState("costa_rica");
   const [gas,            setGas]            = useState("co2");
   const [enabledSectors, setEnabledSectors] = useState(() =>
-    Object.fromEntries(ALL_SECTORS.map(s => [s, true]))
+    Object.fromEntries(ALL_SECTORS.map(s => [s, ["transport", "agriculture"].includes(s)]))
   );
 
   // Emissions tab — sector + timeline lifted here
@@ -178,6 +190,12 @@ export default function AppV2({ user, onBack, onLogout }) {
   const [simPolicies,   setSimPolicies]   = useState([]);
   const [simPolicyId,   setSimPolicyId]   = useState("");
   const [simPolLoading, setSimPolLoading] = useState(false);
+  const [simYears,      setSimYears]      = useState([]);
+  const [simSelIdx,     setSimSelIdx]     = useState(0);
+
+  // Net Zero tab — year slider
+  const [nzYears,  setNzYears]  = useState([]);
+  const [nzSelIdx, setNzSelIdx] = useState(0);
 
   useEffect(() => {
     fetchSectors().then(d => setSimSectors(d.sectors || [])).catch(() => {});
@@ -207,7 +225,7 @@ export default function AppV2({ user, onBack, onLogout }) {
   }
 
   return (
-    <div style={{ minHeight: "100vh", fontFamily: "system-ui, sans-serif", background: "#f8fafc" }}>
+    <div style={{ minHeight: "100vh", fontFamily: "Inter, sans-serif", background: "#f8fafc" }}>
 
       {/* ── Navbar ── */}
       <div style={{
@@ -215,6 +233,8 @@ export default function AppV2({ user, onBack, onLogout }) {
         height: 56, gap: 14, boxShadow: "0 2px 12px rgba(26,101,133,0.3)",
         position: "sticky", top: 0, zIndex: 100,
       }}>
+        <img src="/Sustain360 - Dark Blue.png" alt="Sustain360"
+          style={{ height: 28, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)" }} />
         <button onClick={onBack} style={{
           background: "none", border: "none", cursor: "pointer", color: "#e0f7fa",
           display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600,
@@ -225,11 +245,11 @@ export default function AppV2({ user, onBack, onLogout }) {
           </svg>
           Back
         </button>
-        <img src="/Sustain360 - Dark Blue.png" alt="Sustain360"
-          style={{ height: 26, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)", marginLeft: 6 }} />
-        <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)", marginLeft: 4 }}>
-          Multi-Sector Decarbonization Explorer
-        </span>
+        <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none" }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>
+            Multi-Sector Decarbonization Explorer
+          </span>
+        </div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{
             fontSize: 12.5, fontWeight: 600, color: "#e0f7fa",
@@ -267,7 +287,7 @@ export default function AppV2({ user, onBack, onLogout }) {
       <div style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
 
         {/* ── Controls row: Region | GHG | Sectors (net zero only) ── */}
-        <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "nowrap", overflowX: "auto", marginLeft: pageTab === "emissions" ? 72 : 0 }}>
 
           {/* REGION card */}
           <div style={cardStyle}>
@@ -410,16 +430,58 @@ export default function AppV2({ user, onBack, onLogout }) {
                   }
                 </select>
               </div>
+              {simYears.length > 0 && (
+                <div style={{ ...cardStyle, minWidth: 140, flexShrink: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <label style={lbl}>Year</label>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: "#0f172a" }}>
+                      {simYears[simSelIdx] ?? 2050}
+                    </span>
+                  </div>
+                  <input
+                    type="range" min={0} max={Math.max(0, simYears.length - 1)}
+                    step={1} value={simSelIdx}
+                    onChange={e => setSimSelIdx(+e.target.value)}
+                    style={{ width: "100%", accentColor: "#1e7093" }}
+                  />
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#94a3b8", marginTop: 2 }}>
+                    <span>{simYears[0] ?? 2015}</span>
+                    <span>{simYears[simYears.length - 1] ?? 2050}</span>
+                  </div>
+                </div>
+              )}
             </>
           )}
 
-          {/* SECTORS card — only on Net Zero tab */}
+          {/* SECTORS + YEAR — only on Net Zero tab */}
           {pageTab === "netzero" && (
-            <SectorFilterDropdown
-              enabledSectors={enabledSectors}
-              onToggleSector={handleToggleSector}
-              onToggleAll={handleToggleAll}
-            />
+            <>
+              <SectorFilterDropdown
+                enabledSectors={enabledSectors}
+                onToggleSector={handleToggleSector}
+                onToggleAll={handleToggleAll}
+              />
+              {nzYears.length > 0 && (
+                <div style={{ ...cardStyle, minWidth: 140, flexShrink: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <label style={lbl}>Year</label>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: "#0f172a" }}>
+                      {nzYears[nzSelIdx] ?? 2050}
+                    </span>
+                  </div>
+                  <input
+                    type="range" min={0} max={Math.max(0, nzYears.length - 1)}
+                    step={1} value={nzSelIdx}
+                    onChange={e => setNzSelIdx(+e.target.value)}
+                    style={{ width: "100%", accentColor: "#1e7093" }}
+                  />
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#94a3b8", marginTop: 2 }}>
+                    <span>{nzYears[0] ?? 2015}</span>
+                    <span>{nzYears[nzYears.length - 1] ?? 2050}</span>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
         </div>
@@ -437,6 +499,8 @@ export default function AppV2({ user, onBack, onLogout }) {
             region={region} gas={gas} unit={unit}
             sector={simSector} policyId={simPolicyId}
             policies={simPolicies} polLoading={simPolLoading}
+            selIdx={simSelIdx}
+            onYearsLoaded={years => { setSimYears(years); setSimSelIdx(Math.max(0, years.length - 1)); }}
           />
         )}
         {pageTab === "netzero"    && (
@@ -445,6 +509,8 @@ export default function AppV2({ user, onBack, onLogout }) {
             enabledSectors={enabledSectors}
             onToggleSector={handleToggleSector}
             onToggleAll={handleToggleAll}
+            selIdx={nzSelIdx}
+            onYearsLoaded={years => { setNzYears(years); setNzSelIdx(Math.max(0, years.length - 1)); }}
           />
         )}
 

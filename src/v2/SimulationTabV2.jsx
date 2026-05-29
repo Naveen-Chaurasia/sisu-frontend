@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  AreaChart, Area, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, LineChart, Line, ReferenceLine,
+  ComposedChart, AreaChart, Area, BarChart, Bar, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  ReferenceLine, Label, LabelList,
 } from "recharts";
 import { fetchSectors, runSectorPolicy } from "./api";
 import { IconPlay, IconArrowUp, IconArrowDown, SECTOR_ICON_MAP } from "./Icons";
@@ -27,22 +28,22 @@ function Spinner({ size = 20 }) {
   );
 }
 
-function ImpactCard({ label, value, sub, color, positive }) {
+function ImpactCard({ label, value, sub, color, icon }) {
   return (
     <div style={{
-      background: "#fff", border: "1px solid #e2e8f0",
-      borderLeft: `4px solid ${color}`, borderRadius: 12, padding: "14px 16px",
+      background: "#fff",
+      border: "1px solid #e2e8f0",
+      borderTop: `3px solid ${color}`,
+      borderRadius: 12,
+      padding: "16px 18px",
       boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
     }}>
-      <div style={{ fontSize: 9.5, fontWeight: 700, color, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 6 }}>{label}</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 22, fontWeight: 900, color: "#0f172a", lineHeight: 1 }}>
-        {positive !== undefined && (positive
-          ? <IconArrowUp size={14} style={{ color: "#059669", flexShrink: 0 }} />
-          : <IconArrowDown size={14} style={{ color: "#dc2626", flexShrink: 0 }} />
-        )}
-        {value}
+      <div style={{ fontSize: 9.5, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>{label}</div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 6 }}>
+        <span style={{ fontSize: 26, fontWeight: 900, color: "#0f172a", lineHeight: 1 }}>{value}</span>
+        {icon && <span style={{ fontSize: 18, marginBottom: 2 }}>{icon}</span>}
       </div>
-      <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 3 }}>{sub}</div>
+      <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 5 }}>{sub}</div>
     </div>
   );
 }
@@ -61,31 +62,39 @@ function SimTooltip({ active, payload, label, unit }) {
   );
 }
 
-function BarTooltip({ active, payload }) {
+function BarTooltip({ active, payload, unit }) {
   if (!active || !payload?.length) return null;
   const d = payload[0]?.payload;
   return (
     <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 14px", fontSize: 12.5, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
       <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>{d?.name}</div>
-      <div style={{ color: "#64748b" }}>Abatement: <strong style={{ color: "#1e7093" }}>{fmt(d?.value, 1)}</strong></div>
+      <div style={{ color: "#64748b" }}>Abatement: <strong style={{ color: "#1e7093" }}>{fmt(d?.value, 1)} {unit}</strong></div>
     </div>
   );
 }
 
-export default function SimulationTabV2({ region, gas, unit, sector, policyId, policies, polLoading }) {
+function chartCard(accentColor) {
+  return {
+    background: "#fff",
+    border: "1px solid #e2e8f0",
+    borderTop: `3px solid ${accentColor}`,
+    borderRadius: 16,
+    padding: "20px 22px",
+    boxShadow: "0 1px 6px rgba(0,0,0,0.04)",
+  };
+}
+
+export default function SimulationTabV2({ region, gas, unit, sector, policyId, policies, polLoading, selIdx = 0, onYearsLoaded }) {
   const [sectors,  setSectors]  = useState([]);
   const [result,   setResult]   = useState(null);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState(null);
-  const [selIdx,   setSelIdx]   = useState(0);
   const reportRef = useRef(null);
 
-  // Load sector list (for metadata only: icon, label)
   useEffect(() => {
     fetchSectors().then(d => setSectors(d.sectors || [])).catch(() => {});
   }, []);
 
-  // Reset result when sector or policy changes
   useEffect(() => { setResult(null); setError(null); }, [sector, policyId]);
 
   async function handleRun() {
@@ -96,7 +105,7 @@ export default function SimulationTabV2({ region, gas, unit, sector, policyId, p
     try {
       const d = await runSectorPolicy(sector, policyId, region, gas);
       setResult(d);
-      setSelIdx(Math.max(0, (d.years?.length || 1) - 1));
+      onYearsLoaded?.(d.years || []);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -115,14 +124,12 @@ export default function SimulationTabV2({ region, gas, unit, sector, policyId, p
     }).from(reportRef.current).save();
   }
 
-  const sectorMeta = sectors.find(s => s.sector === sector) || {};
-  const policyMeta = policies.find(p => p.id === policyId) || {};
+  const sectorMeta  = sectors.find(s => s.sector === sector) || {};
+  const policyMeta  = policies.find(p => p.id === policyId) || {};
   const isTransport = sector === "transport";
-  const years = result?.years || [];
-  const n     = years.length;
-  const selYear = years[selIdx] ?? 2050;
+  const years       = result?.years || [];
+  const selYear     = years[selIdx] ?? 2050;
 
-  // Derived from result
   const baseline  = result?.baseline  || [];
   const policy    = result?.policy    || [];
   const abatement = result?.abatement || [];
@@ -133,24 +140,24 @@ export default function SimulationTabV2({ region, gas, unit, sector, policyId, p
   const policyFinal         = policy[selIdx]  ?? 0;
   const pctReduction        = baselineFinal > 0 ? (totalAbatementFinal / baselineFinal * 100) : 0;
 
-  // Comparison line chart data
+  // Peak abatement year
+  const peakIdx  = abatement.reduce((mi, v, i) => (v || 0) > (abatement[mi] || 0) ? i : mi, 0);
+  const peakYear = years[peakIdx];
+  const peakVal  = abatement[peakIdx] || 0;
+
   const compData = years.map((yr, i) => ({
     year: yr,
     Baseline: parseFloat((baseline[i] || 0).toFixed(4)),
     Policy:   parseFloat((policy[i]   || 0).toFixed(4)),
   }));
 
-  // Abatement trajectory data
   const abateData = years.map((yr, i) => ({
     year: yr,
     abatement: parseFloat((abatement[i] || 0).toFixed(4)),
   }));
 
-  // Breakdown (categories or by_mode for transport)
-  const categories = result?.categories || [];
-  const hasCats    = categories.length > 0;
-
-  // Waterfall at selected year: baseline minus categories
+  const categories   = result?.categories || [];
+  const hasCats      = categories.length > 0;
   const catDataAtYear = hasCats
     ? categories.map((c, ci) => ({
         name:  c.label,
@@ -158,6 +165,8 @@ export default function SimulationTabV2({ region, gas, unit, sector, policyId, p
         color: PALETTE[ci % PALETTE.length],
       })).filter(d => d.value > 0).sort((a, b) => b.value - a.value)
     : [];
+
+  const regionLabel = region === "costa_rica" ? "Costa Rica" : "Mexico";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -180,33 +189,24 @@ export default function SimulationTabV2({ region, gas, unit, sector, policyId, p
         {polLoading && <span style={{ fontSize: 12, color: "#94a3b8" }}>Loading policies…</span>}
       </div>
 
-      {/* Error */}
       {error && (
-        <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10,
-          padding: "12px 16px", color: "#dc2626", fontSize: 13 }}>
+        <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "12px 16px", color: "#dc2626", fontSize: 13 }}>
           Error: {error}
         </div>
       )}
 
-      {/* Loading overlay */}
       {loading && (
         <div style={{ textAlign: "center", padding: "60px 0" }}>
           <Spinner size={48} />
-          <div style={{ fontSize: 14, color: "#1a6585", fontWeight: 600, marginTop: 14 }}>
-            Running policy simulation…
-          </div>
+          <div style={{ fontSize: 14, color: "#1a6585", fontWeight: 600, marginTop: 14 }}>Running policy simulation…</div>
           <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 6 }}>
-            {sectorMeta.icon} {sectorMeta.label} · {policyMeta.label}
+            {sectorMeta.label} · {policyMeta.label}
           </div>
         </div>
       )}
 
-      {/* Hint if no result yet */}
       {!loading && !result && !error && (
-        <div style={{
-          background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 12,
-          padding: "28px 24px", textAlign: "center", color: "#0369a1",
-        }}>
+        <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 12, padding: "28px 24px", textAlign: "center", color: "#0369a1" }}>
           <img src="/S360_Logo_Chakra.png" alt="" style={{ width: 52, height: 52, objectFit: "contain", marginBottom: 10, opacity: 0.7 }} />
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>Select a sector and policy, then click Run</div>
           <div style={{ fontSize: 13, color: "#0284c7" }}>
@@ -215,37 +215,36 @@ export default function SimulationTabV2({ region, gas, unit, sector, policyId, p
         </div>
       )}
 
-      {/* Results */}
       {result && !loading && (
         <div ref={reportRef} style={{
           display: "flex", flexDirection: "column", gap: 20,
-          border: "3px solid rgba(30,112,147,0.5)",
+          border: "2px solid rgba(30,112,147,0.25)",
           borderRadius: 20, padding: "28px 24px", position: "relative",
+          background: "#fafcff",
         }}>
 
-          {/* Report header — logo | title (centered) | export button */}
+          {/* ── Report header ── */}
           <div style={{ display: "flex", alignItems: "center", paddingBottom: 16, borderBottom: "1px solid #e2e8f0" }}>
             <div style={{ flex: 1 }}>
-              <img src="/Sustain360 - Dark Blue.png" alt="Sustain360" style={{ height: 40, objectFit: "contain" }} />
+              <img src="/Sustain360 - Dark Blue.png" alt="Sustain360" style={{ height: 36, objectFit: "contain" }} />
             </div>
             <div style={{ flex: 1, textAlign: "center" }}>
-              <div style={{ fontSize: 20, fontWeight: 800, color: "#0f172a", letterSpacing: -0.3 }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", letterSpacing: -0.3 }}>
                 Policy Simulation Results
-                <span style={{ color: "#1a6585", marginLeft: 10, fontWeight: 600, fontSize: 16 }}>— {region === "costa_rica" ? "Costa Rica" : "Mexico"}</span>
+                <span style={{ color: "#1a6585", marginLeft: 8, fontWeight: 600, fontSize: 14 }}>— {regionLabel}</span>
               </div>
-              <div style={{ fontSize: 12, color: "#64748b", marginTop: 3 }}>
-                {(() => { const SI = SECTOR_ICON_MAP[sector]; return SI ? <SI size={12} style={{ verticalAlign: "middle", marginRight: 3 }} /> : null; })()}{sectorMeta.label} ·{" "}
-                <strong style={{ color: "#0f172a" }}>{policyMeta.label || policyId}</strong>{" "}
-                · Emission Type:{" "}
-                <strong style={{ color: result.emission_type === "exact" ? "#059669" : "#d97706" }}>
-                  {result.emission_type === "exact" ? "SISEPUEDE Model (Exact)" : "Proxy Estimate"}
-                </strong>
+              <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 3 }}>
+                {sectorMeta.label} · <strong style={{ color: "#0f172a" }}>{policyMeta.label || policyId}</strong>
+                {" · "}
+                <span style={{ color: result.emission_type === "exact" ? "#059669" : "#d97706", fontWeight: 600 }}>
+                  {result.emission_type === "exact" ? "SISEPUEDE Exact" : "Proxy Estimate"}
+                </span>
               </div>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
               <button onClick={exportPDF} style={{
                 display: "flex", alignItems: "center", gap: 6,
-                background: "rgba(30,112,147,0.1)", color: "#1e7093",
+                background: "rgba(30,112,147,0.08)", color: "#1e7093",
                 border: "1px solid rgba(30,112,147,0.2)", borderRadius: 8,
                 padding: "7px 14px", cursor: "pointer", fontSize: 12.5,
                 fontFamily: "inherit", fontWeight: 600,
@@ -258,163 +257,192 @@ export default function SimulationTabV2({ region, gas, unit, sector, policyId, p
             </div>
           </div>
 
-          {/* Stat cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+          {/* ── Hero summary banner ── */}
+          <div style={{
+            background: "linear-gradient(135deg, #0f2d4a 0%, #1a5272 60%, #1e7093 100%)",
+            borderRadius: 14, padding: "20px 26px",
+            display: "flex", alignItems: "center", gap: 24,
+          }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>
+                Simulation Summary
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#fff", lineHeight: 1.55 }}>
+                <strong style={{ color: "#67c5e0" }}>{policyMeta.label || policyId}</strong> reduces{" "}
+                <strong style={{ color: "#67c5e0" }}>{sectorMeta.label || sector}</strong> emissions by{" "}
+                <strong style={{ color: "#34d399", fontSize: 17 }}>{pctReduction.toFixed(3)}%</strong> by {selYear},
+                saving <strong style={{ color: "#34d399", fontSize: 17 }}>{fmt(totalAbatementCum, 3)}</strong> {unit} cumulatively.
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 20, flexShrink: 0 }}>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 28, fontWeight: 900, color: "#34d399", lineHeight: 1 }}>{pctReduction.toFixed(3)}%</div>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>reduction by {selYear}</div>
+              </div>
+              <div style={{ width: 1, background: "rgba(255,255,255,0.15)" }} />
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 28, fontWeight: 900, color: "#93c5fd", lineHeight: 1 }}>{fmt(totalAbatementCum, 3)}</div>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>{unit} cumulative</div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── 4 Stat cards ── */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
             <ImpactCard
-              label="Abatement in 2050"
-              value={fmt(totalAbatementFinal)}
-              sub={unit + " reduced"}
+              label={`Abatement in ${selYear}`}
+              value={fmt(totalAbatementFinal, 3)}
+              sub={unit + " reduced vs baseline"}
               color="#059669"
-              positive={false}
+            />
+            <ImpactCard
+              label="% Reduction from Baseline"
+              value={pctReduction.toFixed(3) + "%"}
+              sub={`at year ${selYear}`}
+              color="#10b981"
             />
             <ImpactCard
               label="Cumulative Abatement"
-              value={fmt(totalAbatementCum)}
-              sub={unit + " 2015–2050"}
+              value={fmt(totalAbatementCum, 3)}
+              sub={unit + " · 2015–2050"}
               color="#7c3aed"
             />
             <ImpactCard
-              label="Policy Emissions 2050"
-              value={fmt(policyFinal)}
+              label={`Policy Emissions ${selYear}`}
+              value={fmt(policyFinal, 3)}
               sub={unit + " with policy"}
               color="#f59e0b"
             />
           </div>
 
-          {/* Year slider */}
-          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 16px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: "#1a6585", textTransform: "uppercase", letterSpacing: 0.7 }}>
-                Selected Year
-              </span>
-              <span style={{ fontSize: 13, fontWeight: 800, color: "#0f172a" }}>{selYear}</span>
-            </div>
-            <input type="range" min={0} max={Math.max(0, n - 1)} step={1} value={selIdx}
-              onChange={e => setSelIdx(+e.target.value)}
-              style={{ width: "100%", accentColor: "#1e7093" }} />
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#94a3b8", marginTop: 2 }}>
-              <span>{years[0] ?? 2015}</span><span>{years[n - 1] ?? 2050}</span>
-            </div>
-          </div>
-
-          {/* Baseline vs Policy trajectory */}
-          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: "20px 22px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>Baseline vs Policy Emissions</div>
+          {/* ── Baseline vs Policy (shaded gap) ── */}
+          <div style={chartCard("#1e7093")}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 3 }}>Baseline vs Policy Emissions</div>
             <div style={{ fontSize: 11.5, color: "#64748b", marginBottom: 16 }}>
-              {sectorMeta.icon} {sectorMeta.label} trajectory · {unit}
+              {sectorMeta.label} trajectory · {unit} — shaded area = emissions saved
             </div>
-            <ResponsiveContainer width="100%" height={240}>
-              <LineChart data={compData} margin={{ top: 4, right: 20, left: 8, bottom: 18 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="year" tick={{ fontSize: 10, fill: "#94a3b8" }}
-                  label={{ value: "Year", position: "insideBottom", offset: -14, fill: "#94a3b8", fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} />
-                <Tooltip content={<SimTooltip unit={unit} />} />
-                <ReferenceLine x={selYear} stroke="#94a3b8" strokeDasharray="4 3" />
-                <Line type="monotone" dataKey="Baseline" stroke="#64748b" strokeWidth={2.5}
-                  dot={false} strokeDasharray="6 3" />
-                <Line type="monotone" dataKey="Policy" stroke="#1e7093" strokeWidth={2.5} dot={false} />
-              </LineChart>
-            </ResponsiveContainer>
-            <div style={{ display: "flex", gap: 20, justifyContent: "center", marginTop: 10 }}>
-              {[{ color: "#64748b", label: "Baseline", dash: true }, { color: "#1e7093", label: "With Policy" }].map(s => (
-                <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
-                  <div style={{ width: 20, height: 2, background: s.color, borderRadius: 1,
-                    borderTop: s.dash ? "2px dashed " + s.color : undefined }} />
-                  {s.label}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Abatement trajectory */}
-          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: "20px 22px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>Annual Abatement</div>
-            <div style={{ fontSize: 11.5, color: "#64748b", marginBottom: 16 }}>
-              Emissions avoided per year · {unit}
-            </div>
-            <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={abateData} margin={{ top: 4, right: 20, left: 8, bottom: 18 }}>
+            <ResponsiveContainer width="100%" height={260}>
+              <ComposedChart data={compData} margin={{ top: 10, right: 24, left: 10, bottom: 20 }}>
                 <defs>
-                  <linearGradient id="agrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#059669" stopOpacity={0.5} />
-                    <stop offset="95%" stopColor="#059669" stopOpacity={0.02} />
+                  <linearGradient id="baseGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor="#94a3b8" stopOpacity={0.28} />
+                    <stop offset="95%" stopColor="#94a3b8" stopOpacity={0.04} />
+                  </linearGradient>
+                  <linearGradient id="polGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor="#1e7093" stopOpacity={0.38} />
+                    <stop offset="95%" stopColor="#1e7093" stopOpacity={0.06} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                 <XAxis dataKey="year" tick={{ fontSize: 10, fill: "#94a3b8" }}
                   label={{ value: "Year", position: "insideBottom", offset: -14, fill: "#94a3b8", fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} />
+                <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} tickFormatter={v => fmt(v, 1)} width={68}
+                  label={{ value: `Emissions (${unit})`, angle: -90, position: "insideLeft", offset: 14, fill: "#94a3b8", fontSize: 10, dy: 60 }} />
                 <Tooltip content={<SimTooltip unit={unit} />} />
-                <ReferenceLine x={selYear} stroke="#94a3b8" strokeDasharray="4 3" />
-                <Area type="monotone" dataKey="abatement" stroke="#059669" strokeWidth={2}
-                  fill="url(#agrad)" name="Abatement" />
+                <ReferenceLine x={selYear} stroke="#64748b" strokeDasharray="4 3" strokeWidth={1.5}>
+                  <Label value={selYear} position="insideTopRight" fontSize={10} fill="#64748b" offset={4} />
+                </ReferenceLine>
+                <Area type="monotone" dataKey="Baseline" stroke="#94a3b8" strokeWidth={2}
+                  strokeDasharray="6 3" fill="url(#baseGrad)" dot={false} />
+                <Area type="monotone" dataKey="Policy" stroke="#1e7093" strokeWidth={2.5}
+                  fill="url(#polGrad)" dot={false} />
+              </ComposedChart>
+            </ResponsiveContainer>
+            <div style={{ display: "flex", gap: 20, justifyContent: "center", marginTop: 10 }}>
+              {[
+                { color: "#94a3b8", label: "Baseline (no policy)", dash: true },
+                { color: "#1e7093", label: "With Policy" },
+              ].map(s => (
+                <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#64748b" }}>
+                  <svg width="22" height="10">
+                    <line x1="0" y1="5" x2="22" y2="5"
+                      stroke={s.color} strokeWidth="2"
+                      strokeDasharray={s.dash ? "5 3" : undefined} />
+                  </svg>
+                  {s.label}
+                </div>
+              ))}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#64748b" }}>
+                <div style={{ width: 14, height: 10, background: "rgba(148,163,184,0.25)", border: "1px solid #94a3b8", borderRadius: 2 }} />
+                Emissions saved
+              </div>
+            </div>
+          </div>
+
+          {/* ── Annual Abatement with peak annotation ── */}
+          <div style={chartCard("#059669")}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 3 }}>Annual Abatement</div>
+            <div style={{ fontSize: 11.5, color: "#64748b", marginBottom: 16 }}>
+              Emissions avoided per year · {unit}
+            </div>
+            <ResponsiveContainer width="100%" height={210}>
+              <AreaChart data={abateData} margin={{ top: 16, right: 24, left: 10, bottom: 20 }}>
+                <defs>
+                  <linearGradient id="agrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor="#059669" stopOpacity={0.5} />
+                    <stop offset="95%" stopColor="#059669" stopOpacity={0.03} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="year" tick={{ fontSize: 10, fill: "#94a3b8" }}
+                  label={{ value: "Year", position: "insideBottom", offset: -14, fill: "#94a3b8", fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} tickFormatter={v => fmt(v, 1)} width={68}
+                  label={{ value: `Abatement (${unit})`, angle: -90, position: "insideLeft", offset: 14, fill: "#94a3b8", fontSize: 10, dy: 60 }} />
+                <Tooltip content={<SimTooltip unit={unit} />} />
+                {peakYear && (
+                  <ReferenceLine x={peakYear} stroke="#059669" strokeDasharray="4 3" strokeOpacity={0.6}>
+                    <Label value={`Peak ${fmt(peakVal, 3)}`} position="insideTopRight" fontSize={9.5} fill="#059669" offset={4} />
+                  </ReferenceLine>
+                )}
+                <ReferenceLine x={selYear} stroke="#64748b" strokeDasharray="4 3" strokeWidth={1.5}>
+                  <Label value={selYear} position="insideTopLeft" fontSize={10} fill="#64748b" offset={4} />
+                </ReferenceLine>
+                <Area type="monotone" dataKey="abatement" stroke="#059669" strokeWidth={2.5}
+                  fill="url(#agrad)" name="Abatement" dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Category breakdown */}
+          {/* ── Category / Mode breakdown ── */}
           {hasCats && (
-            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: "20px 22px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>
+            <div style={chartCard("#8b5cf6")}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 3 }}>
                 Abatement by {isTransport ? "Mode" : "Subsector"} — {selYear}
               </div>
               <div style={{ fontSize: 11.5, color: "#64748b", marginBottom: 16 }}>
                 Breakdown at selected year · {unit}
               </div>
-              <ResponsiveContainer width="100%" height={Math.max(180, catDataAtYear.length * 38)}>
+              <ResponsiveContainer width="100%" height={Math.max(180, catDataAtYear.length * 40)}>
                 <BarChart data={catDataAtYear} layout="vertical"
-                  margin={{ top: 4, right: 24, left: 120, bottom: 4 }}>
+                  margin={{ top: 4, right: 80, left: 120, bottom: 24 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 10, fill: "#94a3b8" }} />
+                  <XAxis type="number" tick={{ fontSize: 10, fill: "#94a3b8" }} tickFormatter={v => fmt(v, 1)}
+                    label={{ value: `Abatement (${unit})`, position: "insideBottom", offset: -4, fill: "#94a3b8", fontSize: 10 }} />
                   <YAxis type="category" dataKey="name" width={116}
-                    tick={{ fontSize: 11, fill: "#334155", fontWeight: 500 }} />
-                  <Tooltip content={<BarTooltip />} />
+                    tick={{ fontSize: 11, fill: "#334155", fontWeight: 500 }}
+                    label={{ value: isTransport ? "Mode" : "Subsector", angle: -90, position: "insideLeft", offset: 14, fill: "#94a3b8", fontSize: 10, dy: 40 }} />
+                  <Tooltip content={<BarTooltip unit={unit} />} />
                   <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                     {catDataAtYear.map((entry, i) => (
                       <Cell key={i} fill={entry.color} />
                     ))}
+                    <LabelList dataKey="value" position="right"
+                      formatter={v => fmt(v, 3)}
+                      style={{ fontSize: 10.5, fontWeight: 700, fill: "#334155" }} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-
-              {/* Category legend */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 14 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 14 }}>
                 {catDataAtYear.map(c => (
-                  <div key={c.name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: 2, background: c.color }} />
-                    {c.name}: <strong style={{ color: "#0f172a" }}>{fmt(c.value)} {unit}</strong>
+                  <div key={c.name} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#64748b" }}>
+                    <div style={{ width: 10, height: 10, borderRadius: 2, background: c.color, flexShrink: 0 }} />
+                    {c.name}: <strong style={{ color: "#0f172a" }}>{fmt(c.value, 3)} {unit}</strong>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Scope breakdown for transport */}
-          {isTransport && result.scope_breakdown && (
-            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: "20px 22px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", marginBottom: 16 }}>Scope Abatement Breakdown</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-                {[
-                  { key: "scope1", label: "Scope 1 · Direct",      color: "#ef4444" },
-                  { key: "scope2", label: "Scope 2 · Electricity",  color: "#3b82f6" },
-                  { key: "scope3", label: "Scope 3 · Upstream",     color: "#f59e0b" },
-                ].map(s => {
-                  const vals = result.scope_breakdown[s.key] || [];
-                  const val  = vals[selIdx] ?? 0;
-                  return (
-                    <div key={s.key} style={{ background: "#f8fafc", borderRadius: 10, padding: "14px 16px",
-                      borderLeft: `3px solid ${s.color}` }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: s.color, textTransform: "uppercase",
-                        letterSpacing: 0.7, marginBottom: 6 }}>{s.label}</div>
-                      <div style={{ fontSize: 24, fontWeight: 900, color: "#0f172a" }}>{fmt(val)}</div>
-                      <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{unit} abated</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
         </div>
       )}

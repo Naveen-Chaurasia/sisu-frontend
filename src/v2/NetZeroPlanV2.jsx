@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area, LineChart, Line, ReferenceLine, Legend,
+  AreaChart, Area, ComposedChart, LineChart, Line, ReferenceLine, Legend, LabelList, Label,
 } from "recharts";
 import { fetchNetZeroPolicies, runNetZeroBatch } from "./api";
 import {
@@ -78,20 +78,14 @@ function TrajTooltip({ active, payload, label, unit }) {
   );
 }
 
-const SUBTABS = [
-  { id: "macc",   label: "MACC Chart",          Icon: IconBarChart      },
-  { id: "traj",   label: "Net Zero Trajectory",  Icon: IconTrendingDown  },
-  { id: "invest", label: "Investment Plan",       Icon: IconDollarSign   },
-];
 
-export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onToggleSector, onToggleAll }) {
+export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onToggleSector, onToggleAll, selIdx = 0, onYearsLoaded }) {
   const [policies,  setPolicies]  = useState([]);
   const [batchData, setBatchData] = useState(null);
   const [loading,   setLoading]   = useState(false);
   const [error,     setError]     = useState(null);
   const [costs,     setCosts]     = useState({});
   const [enabled,   setEnabled]   = useState({});
-  const [activeTab, setActiveTab] = useState("macc");
   const reportRef    = useRef(null);
   const prevSectors  = useRef(enabledSectors);
 
@@ -123,7 +117,7 @@ export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onTog
         pols.forEach(p => {
           initCosts[p.id]   = p.default_capex_per_tco2 ?? 50;
           // Respect whatever sectors the user already has toggled
-          initEnabled[p.id] = enabledSectors[p.sector] !== false;
+          initEnabled[p.id] = ["transport", "agriculture"].includes(p.sector || "transport");
         });
         setCosts(initCosts);
         setEnabled(initEnabled);
@@ -138,6 +132,7 @@ export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onTog
     try {
       const d = await runNetZeroBatch(region, gas);
       setBatchData(d);
+      onYearsLoaded?.(d.years || []);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -188,9 +183,10 @@ export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onTog
     "With Selected Policies": withSelected[i] ?? 0,
   }));
 
-  // Summary headline stats — based on selected policies only
-  const baselineFinal = baseline[baseline.length - 1] ?? 0;
-  const policyFinal   = withSelected[withSelected.length - 1] ?? 0;
+  // Summary headline stats — based on selected year (selIdx)
+  const selYear       = years[selIdx] ?? 2050;
+  const baselineFinal = baseline[selIdx] ?? baseline[baseline.length - 1] ?? 0;
+  const policyFinal   = withSelected[selIdx] ?? withSelected[withSelected.length - 1] ?? 0;
   const totalAbate    = baselineFinal - policyFinal;
   const pctReduction  = baselineFinal > 0 ? (totalAbate / baselineFinal * 100) : 0;
   const cumulAbate    = baseline.reduce((s, v, i) => s + Math.max(0, v - (withSelected[i] ?? v)), 0);
@@ -218,13 +214,7 @@ export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onTog
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
       {/* Run button row */}
-      <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>Cross-Sector Net Zero Plan</div>
-          <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
-            {region === "costa_rica" ? "Costa Rica" : "Mexico"} · All sectors combined · {unit}
-          </div>
-        </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
         <button onClick={runBatch} disabled={loading}
           style={{
             padding: "9px 22px", borderRadius: 8, border: "none",
@@ -237,6 +227,14 @@ export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onTog
           }}>
           {loading ? <><Spinner size={14} /> Computing…</> : <><IconPlay size={13} /> Run Net Zero Batch</>}
         </button>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>Cross-Sector Net Zero Plan</div>
+          <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+            {region === "costa_rica" ? "Costa Rica" : "Mexico"} ·{" "}
+            {ALL_SECTORS.filter(s => enabledSectors[s]).map(s => SECTOR_LABELS[s]).join(", ") || "No sectors selected"}{" "}
+            · {unit}
+          </div>
+        </div>
       </div>
 
       {/* Error */}
@@ -283,9 +281,12 @@ export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onTog
           )}
 
           {/* Sector groups */}
-          {ALL_SECTORS.filter(sec => enabledSectors[sec]).map(sec => {
+          {ALL_SECTORS.filter(sec => {
+            const secPols = policies.filter(p => (p.sector || "transport") === sec);
+            return secPols.some(p => !!enabled[p.id]);
+          }).map(sec => {
             const col      = SECTOR_COLORS[sec] || "#64748b";
-            const secPols  = policies.filter(p => (p.sector || "transport") === sec);
+            const secPols  = policies.filter(p => (p.sector || "transport") === sec).filter(p => !!enabled[p.id]);
             if (!secPols.length) return null;
             const allSecOn = secPols.every(p => !!enabled[p.id]);
             const noneSecOn = secPols.every(p => !enabled[p.id]);
@@ -448,8 +449,8 @@ export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onTog
           {/* Headline stats */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
             {[
-              { label: "2050 Abatement",      value: fmt(totalAbate),     sub: unit + " reduced",          color: "#059669" },
-              { label: "% Reduction (2050)",   value: pctReduction.toFixed(1) + "%", sub: "vs business as usual", color: "#0284c7" },
+              { label: `${selYear} Abatement`,    value: fmt(totalAbate),     sub: unit + " reduced",          color: "#059669" },
+              { label: `% Reduction (${selYear})`, value: pctReduction.toFixed(1) + "%", sub: "vs business as usual", color: "#0284c7" },
               { label: "Cumulative Abatement", value: fmt(cumulAbate),     sub: unit + " 2015–2050",        color: "#7c3aed" },
               { label: "Total Investment",     value: "$" + fmt(totalInvestment), sub: "capex estimate",      color: "#f59e0b" },
             ].map((c, i) => (
@@ -465,25 +466,11 @@ export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onTog
             ))}
           </div>
 
-          {/* Sub-tabs */}
-          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
-            <div style={{ borderBottom: "1px solid #e2e8f0", display: "flex" }}>
-              {SUBTABS.map(t => (
-                <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
-                  padding: "12px 20px", border: "none", background: "transparent",
-                  fontFamily: "inherit", fontSize: 13, fontWeight: 600, cursor: "pointer",
-                  color: activeTab === t.id ? "#1e7093" : "#64748b",
-                  borderBottom: activeTab === t.id ? "2.5px solid #1e7093" : "2.5px solid transparent",
-                  display: "flex", alignItems: "center", gap: 6,
-                }}>
-                  <t.Icon size={14} /> {t.label}
-                </button>
-              ))}
-            </div>
-            <div style={{ padding: "22px" }}>
+          {/* All sections in one view */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
-              {/* MACC Chart */}
-              {activeTab === "macc" && (
+            {/* MACC Chart */}
+            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: "22px" }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>
                     Marginal Abatement Cost Curve
@@ -503,7 +490,7 @@ export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onTog
                   </div>
 
                   <ResponsiveContainer width="100%" height={340}>
-                    <BarChart data={maccBars} margin={{ top: 8, right: 20, left: 8, bottom: 70 }}>
+                    <BarChart data={maccBars} margin={{ top: 24, right: 44, left: 8, bottom: 70 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                       <XAxis dataKey="name" tick={{ fontSize: 9.5, fill: "#94a3b8" }}
                         angle={-38} textAnchor="end" interval={0} />
@@ -515,14 +502,17 @@ export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onTog
                         {maccBars.map((entry, i) => (
                           <Cell key={i} fill={SECTOR_COLORS[entry.sector] || "#94a3b8"} />
                         ))}
+                        <LabelList dataKey="cost" position="top"
+                          formatter={v => `$${fmt(v, 0)}`}
+                          style={{ fill: "#0f172a", fontSize: 9, fontWeight: 800 }} />
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-              )}
+            </div>
 
-              {/* Net Zero Trajectory */}
-              {activeTab === "traj" && (
+            {/* Net Zero Trajectory */}
+            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: "22px" }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>
                     Emission Trajectory 2015–2050
@@ -531,7 +521,7 @@ export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onTog
                     Combined all-sector baseline vs. all enabled policies · {unit}
                   </div>
                   <ResponsiveContainer width="100%" height={300}>
-                    <AreaChart data={trajData} margin={{ top: 8, right: 20, left: 8, bottom: 20 }}>
+                    <ComposedChart data={trajData} margin={{ top: 24, right: 20, left: 8, bottom: 20 }}>
                       <defs>
                         <linearGradient id="gradBL" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%"  stopColor="#64748b" stopOpacity={0.35} />
@@ -549,11 +539,44 @@ export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onTog
                       <Tooltip content={<TrajTooltip unit={unit} />} />
                       <ReferenceLine y={NET_ZERO_LINE} stroke="#059669" strokeDasharray="6 3"
                         label={{ value: "Net Zero", position: "right", fill: "#059669", fontSize: 10 }} />
+                      {selYear && (
+                        <ReferenceLine x={selYear} stroke="#64748b" strokeDasharray="4 3" strokeWidth={1.5}>
+                          <Label value={selYear} position="insideTopRight" fontSize={10} fill="#64748b" offset={4} />
+                        </ReferenceLine>
+                      )}
                       <Area type="monotone" dataKey="Baseline" stroke="#64748b" strokeWidth={2}
                         fill="url(#gradBL)" strokeDasharray="6 3" />
                       <Area type="monotone" dataKey="With Selected Policies" stroke="#1e7093" strokeWidth={2.5}
                         fill="url(#gradPol)" />
-                    </AreaChart>
+                      <Line type="monotone" dataKey="Baseline" stroke="transparent" strokeWidth={0}
+                        dot={(props) => {
+                          const { cx, cy, payload } = props;
+                          if (payload.year % 5 !== 0) return <g key={`bl-${payload.year}`} />;
+                          return (
+                            <g key={`bl-${payload.year}`}>
+                              <circle cx={cx} cy={cy} r={3.5} fill="#64748b" stroke="#fff" strokeWidth={1.5} />
+                              <text x={cx} y={cy - 9} textAnchor="middle" fill="#64748b" fontSize={8.5} fontWeight="700">
+                                {fmt(payload["Baseline"], 1)}
+                              </text>
+                            </g>
+                          );
+                        }}
+                        activeDot={false} isAnimationActive={false} legendType="none" />
+                      <Line type="monotone" dataKey="With Selected Policies" stroke="transparent" strokeWidth={0}
+                        dot={(props) => {
+                          const { cx, cy, payload } = props;
+                          if (payload.year % 5 !== 0) return <g key={`pol-${payload.year}`} />;
+                          return (
+                            <g key={`pol-${payload.year}`}>
+                              <circle cx={cx} cy={cy} r={3.5} fill="#1e7093" stroke="#fff" strokeWidth={1.5} />
+                              <text x={cx} y={cy + 17} textAnchor="middle" fill="#1e7093" fontSize={8.5} fontWeight="700">
+                                {fmt(payload["With Selected Policies"], 1)}
+                              </text>
+                            </g>
+                          );
+                        }}
+                        activeDot={false} isAnimationActive={false} legendType="none" />
+                    </ComposedChart>
                   </ResponsiveContainer>
                   <div style={{ display: "flex", gap: 20, justifyContent: "center", marginTop: 12 }}>
                     {[
@@ -569,10 +592,10 @@ export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onTog
                     ))}
                   </div>
                 </div>
-              )}
+            </div>
 
-              {/* Investment Plan */}
-              {activeTab === "invest" && (
+            {/* Investment Plan */}
+            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16, padding: "22px" }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>
                     Investment Requirements
@@ -638,10 +661,9 @@ export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onTog
                     </table>
                   </div>
                 </div>
-              )}
-
             </div>
-          </div>
+
+          </div>{/* end all-sections */}
 
         </div>
       )}

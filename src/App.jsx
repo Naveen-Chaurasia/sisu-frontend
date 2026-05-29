@@ -6,6 +6,7 @@ import ScopeModeling from "./ScopeModeling";
 import AppV2 from "./v2/AppV2";
 import MinesApp from "./mines/MinesApp";
 import MinesApp2 from "./mines2/MinesApp2";
+import InvestmentLanding from "./InvestmentLanding";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const G = "radial-gradient(circle at 17.9167% 91.6667%, rgb(30, 112, 147) 0%, 17.5%, rgb(26, 101, 133) 100%)";
@@ -872,6 +873,7 @@ export default function App() {
   const location                        = useLocation();
   const [authUser, setAuthUser]         = useState(null);
   const [mode, setMode]                 = useState(null);
+  const [selectedMineId, setSelectedMineId] = useState(null);
   const [region, setRegion]             = useState("costa_rica");
   const [nlText, setNlText]             = useState("");
   const [selectedGoal, setSelectedGoal] = useState(null);
@@ -896,6 +898,13 @@ export default function App() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // Reset mine selection when leaving investment route
+  useEffect(() => {
+    if (!location.pathname.startsWith("/projects/investmentmodeling")) {
+      setSelectedMineId(null);
+    }
+  }, [location.pathname]);
 
   // Fetch available gases whenever region changes
   useEffect(() => {
@@ -975,7 +984,9 @@ export default function App() {
   if (pathname.startsWith("/projects/investmentmodeling")) {
     if (location.state?.classic)
       return <MinesApp user={authUser} onBack={() => navigate("/projects")} onLogout={handleLogout} />;
-    return <MinesApp2 user={authUser} onBack={() => navigate("/projects")} onLogout={handleLogout} />;
+    if (!selectedMineId)
+      return <InvestmentLanding user={authUser} onSelectMine={setSelectedMineId} onBack={() => navigate("/projects")} onLogout={handleLogout} />;
+    return <MinesApp2 user={authUser} initialMineId={selectedMineId} onBack={() => setSelectedMineId(null)} onLogout={handleLogout} />;
   }
   if (pathname.startsWith("/projects/emissionmodeling")) {
     if (!mode) return <Welcome user={authUser} onSelect={setMode} onBack={() => navigate("/projects")} onLogout={handleLogout} />;

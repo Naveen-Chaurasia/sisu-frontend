@@ -11,7 +11,11 @@ async function _json(res) {
 
 // Returns { mines: [{ id(UUID), mine_name, license_number, province, wacc, tax_rate,
 //   life_of_mine_yr, commodities, financial_model }] }
-export const fetchMinesList   = ()                   => fetch(`${BASE}/mines/list`).then(_json);
+let _minesCache = null;
+export const fetchMinesList = () => {
+  if (_minesCache) return Promise.resolve(_minesCache);
+  return fetch(`${BASE}/mines/list`).then(_json).then(data => { _minesCache = data; return data; });
+};
 
 // Returns full mine + commodities[].scenarios[].metrics + financial_model
 export const fetchMine        = (id)                 => fetch(`${BASE}/mines/${id}`).then(_json);

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { SECTOR_ICON_MAP } from "./Icons";
 import {
-  AreaChart, Area, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, PieChart, Pie,
+  AreaChart, Area, ComposedChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, PieChart, Pie, Sector, LabelList,
 } from "recharts";
 import { fetchSectors, fetchSectorBaseline } from "./api";
 
@@ -194,6 +194,21 @@ const SCOPE_META = {
   },
 };
 
+const STAGE_LABELS_MAP = {
+  transport:   { scope1: "B1 — Operational Combustion", scope2: "B6 — Grid Electricity",     scope3: "A1–A3 — Well-to-Tank"       },
+  energy:      { scope1: "B1 — Stationary Combustion",  scope2: "B4 — Power Generation",     scope3: "A1–A3 — Fugitive Upstream"  },
+  industrial:  { scope1: "B1 — Industrial Processes",   scope2: "B6 — Electricity",           scope3: "A1–A3 — Upstream"           },
+  agriculture: { scope1: "B1 — Biological Emissions",   scope2: "B6 — Energy Use",            scope3: "A1–A5 — Land Use Change"    },
+  waste:       { scope1: "C3 — Waste Processing",       scope2: "B6 — Energy",                scope3: "C3 — Industrial Wastewater" },
+};
+const STAGE_SHORT = {
+  transport:   { scope1: "B1",  scope2: "B6",  scope3: "A1–A3" },
+  energy:      { scope1: "B1",  scope2: "B4",  scope3: "A1–A3" },
+  industrial:  { scope1: "B1",  scope2: "B6",  scope3: "A1–A3" },
+  agriculture: { scope1: "B1",  scope2: "B6",  scope3: "A1–A5" },
+  waste:       { scope1: "C3",  scope2: "B6",  scope3: "C3"    },
+};
+
 const SECTOR_SCOPE_INFO = {
   transport: {
     scope1: {
@@ -250,11 +265,45 @@ const SECTOR_SCOPE_INFO = {
       standard: "GHG Protocol: Category 1 — Industrial Process Emissions (IPCC Sector 2 — IPPU)",
     },
   },
+  agriculture: {
+    scope1: {
+      description: "Direct GHG emissions from crop cultivation, livestock digestion, manure management, and soil N₂O from fertilizer application.",
+      what: ["CH₄ from enteric fermentation in cattle, buffalo & small ruminants (LVST)", "N₂O & CH₄ from manure management systems — lagoons, composting, pasture (LSMM)", "N₂O from synthetic & organic fertilizer application to soils (SOIL)", "CH₄ & N₂O from rice paddy cultivation and crop residue burning (AGRC)"],
+      columns: ["frac_lvst_*", "ef_lvst_*_kg_ch4_per_animal", "frac_lsmm_*", "ef_lsmm_*", "n_agrc_", "ef_agrc_*", "frac_soil_*"],
+      formula: "Σ livestock_pop × EF_enteric + Σ manure × EF_manure + Σ N_input × EF_N2O",
+      standard: "GHG Protocol: Category 1 — Agriculture (IPCC Sector 3 — AFOLU)",
+    },
+    scope3: {
+      description: "Long-term CO₂ fluxes from land-use change and forestry — deforestation, afforestation, and carbon stock changes in soils and biomass.",
+      what: ["CO₂ released from deforestation & conversion of forests to cropland/pasture (LNDU)", "Carbon sequestration from afforestation, reforestation & improved forest management (PFLO)", "Soil organic carbon stock changes from land-use transitions", "Net forest carbon sink/source including harvested wood products"],
+      columns: ["frac_lndu_*", "ef_lndu_*", "area_lndu_*", "area_pflo_*", "ef_pflo_*"],
+      formula: "Σ area_converted × EF_land_use_change ± Σ forest_area × carbon_flux_rate",
+      standard: "GHG Protocol: Category 11 — Land Use Change (IPCC Sector 3B — LULUCF)",
+    },
+  },
+  waste: {
+    scope1: {
+      description: "Direct CH₄ and N₂O emissions from municipal solid waste disposal and municipal wastewater treatment.",
+      what: ["CH₄ from anaerobic decomposition in landfills and open dumpsites (WASO)", "CH₄ & N₂O from municipal wastewater treatment plants & discharge (WALI)", "Direct gas capture and flaring at managed landfill sites", "Emissions from open burning of solid waste streams"],
+      columns: ["frac_waso_*", "ef_waso_*_kg_ch4_per_tonne", "frac_wali_*", "ef_wali_*_kg_n2o_per_unit"],
+      formula: "Σ waste_disposed × DOC × MCF × EF_CH4 (IPCC first-order decay model)",
+      standard: "GHG Protocol: Category 1 — Waste (IPCC Sector 5 — Solid Waste & Wastewater)",
+    },
+    scope3: {
+      description: "Process-related GHG emissions from treatment of high-strength industrial and commercial effluents.",
+      what: ["CH₄ from anaerobic treatment of industrial wastewater (TRWW)", "N₂O from nitrogen-rich effluent in food & chemical processing", "High-organic-load effluent from food & beverage manufacturing", "Pulp, paper & chemical industry wastewater streams"],
+      columns: ["frac_trww_*", "ef_trww_*", "bod_trww_*"],
+      formula: "Σ BOD_industrial × EF_CH4_per_kg_BOD × treatment_fraction",
+      standard: "GHG Protocol: Category 3 — Industrial Wastewater (IPCC Sector 5D2)",
+    },
+  },
 };
 
 const SECTOR_SCOPE_SUBSECTORS = {
-  energy:     { scope1: ["inen", "scoe"], scope2: ["entc"], scope3: ["fgtv"] },
-  industrial: { scope1: ["ippu"] },
+  energy:      { scope1: ["inen", "scoe"], scope2: ["entc"], scope3: ["fgtv"] },
+  industrial:  { scope1: ["ippu"] },
+  agriculture: { scope1: ["agrc", "lvst", "lsmm", "soil"], scope3: ["lndu", "pflo"] },
+  waste:       { scope1: ["waso", "wali"], scope3: ["trww"] },
 };
 
 // 30-color palette: maximally distinct, cycles through hue/saturation combos
@@ -287,37 +336,110 @@ function Spinner({ size = 20 }) {
   );
 }
 
+const TOOLTIP_ANIM_STYLE = `
+  @keyframes tooltipPop {
+    0%   { opacity: 0; transform: translateY(6px) scale(0.96); }
+    100% { opacity: 1; transform: translateY(0)   scale(1); }
+  }
+  .s360-tooltip { animation: tooltipPop 0.18s cubic-bezier(0.34,1.56,0.64,1) both; }
+`;
+
+function DonutActiveShape(props) {
+  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+  return (
+    <g>
+      <Sector cx={cx} cy={cy} innerRadius={innerRadius - 4} outerRadius={outerRadius + 12}
+        startAngle={startAngle} endAngle={endAngle} fill={fill} opacity={0.18} />
+      <Sector cx={cx} cy={cy} innerRadius={innerRadius - 2} outerRadius={outerRadius + 8}
+        startAngle={startAngle} endAngle={endAngle} fill={fill} />
+    </g>
+  );
+}
+
+function DonutTooltip({ active, payload, unit, total }) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0]?.payload;
+  if (!d) return null;
+  const pct = total > 0 ? (d.value / total * 100).toFixed(1) : "0";
+  return (
+    <>
+      <style>{TOOLTIP_ANIM_STYLE}</style>
+      <div className="s360-tooltip" style={{
+        background: "#fff",
+        border: `1px solid rgba(0,0,0,0.1)`,
+        borderRadius: 10, padding: "9px 13px",
+        boxShadow: "none",
+        minWidth: 150, maxWidth: 170, pointerEvents: "none",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+          <div style={{ width: 10, height: 10, borderRadius: 3, background: d.color, flexShrink: 0 }} />
+          <span style={{ fontSize: 11.5, fontWeight: 700, color: "#0f172a", lineHeight: 1.3 }}>{d.name}</span>
+        </div>
+        <div style={{ fontSize: 20, fontWeight: 900, color: d.color, lineHeight: 1, letterSpacing: -0.5 }}>
+          {fmt(d.value, 1)}
+        </div>
+        <div style={{ fontSize: 10, color: "#64748b", marginTop: 1 }}>{unit} / yr</div>
+        <div style={{ marginTop: 7, height: 4, borderRadius: 2, background: "#f1f5f9", overflow: "hidden" }}>
+          <div style={{ width: `${pct}%`, height: "100%", background: d.color, borderRadius: 2 }} />
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 800, color: d.color, marginTop: 4 }}>{pct}% of total</div>
+      </div>
+    </>
+  );
+}
+
 function ModeBreakdownTooltip({ active, payload, label, unit, modeLabel }) {
   if (!active || !payload?.length) return null;
   const entries = payload.filter(p => p.value > 0).sort((a, b) => b.value - a.value);
   const total = entries.reduce((s, p) => s + p.value, 0);
   const getLabel = k => modeLabel ? modeLabel(k) : (MODE_LABELS[k] || SUBSECTOR_LABELS[k] || k);
+  const topColor = entries[0]?.fill || "#1e7093";
   return (
-    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10,
-      padding: "10px 14px", fontSize: 12, boxShadow: "0 4px 16px rgba(0,0,0,0.1)", minWidth: 210 }}>
-      <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 7, fontSize: 13 }}>{label}</div>
-      {entries.map(p => (
-        <div key={p.dataKey} style={{ display: "flex", justifyContent: "space-between", gap: 14,
-          marginBottom: 3, alignItems: "center" }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 5, color: "#475569" }}>
-            <span style={{ width: 8, height: 8, borderRadius: 2,
-              background: p.fill || "#94a3b8",
-              flexShrink: 0, display: "inline-block" }} />
-            {getLabel(p.dataKey)}
-          </span>
-          <strong style={{ color: "#0f172a" }}>{fmt(p.value, 1)} {unit}</strong>
+    <>
+      <style>{TOOLTIP_ANIM_STYLE}</style>
+      <div className="s360-tooltip" style={{
+        background: "#fff",
+        border: `1px solid rgba(0,0,0,0.1)`,
+        borderRadius: 14, padding: "14px 18px",
+        boxShadow: "none",
+        minWidth: 220, pointerEvents: "none",
+      }}>
+        <div style={{
+          fontSize: 12, fontWeight: 800, color: "#fff", background: topColor,
+          borderRadius: 8, padding: "4px 10px", display: "inline-block", marginBottom: 12, letterSpacing: 0.3,
+        }}>{label}</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {entries.map(p => {
+            const pct = total > 0 ? (p.value / total * 100).toFixed(0) : 0;
+            return (
+              <div key={p.dataKey}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#334155" }}>
+                    <span style={{ width: 9, height: 9, borderRadius: 2, background: p.fill || "#94a3b8", flexShrink: 0, display: "inline-block" }} />
+                    {getLabel(p.dataKey)}
+                  </span>
+                  <strong style={{ fontSize: 12, color: "#0f172a" }}>{fmt(p.value, 1)} {unit}</strong>
+                </div>
+                <div style={{ height: 3, borderRadius: 2, background: "#f1f5f9", overflow: "hidden" }}>
+                  <div style={{ width: `${pct}%`, height: "100%", background: p.fill || "#94a3b8", borderRadius: 2 }} />
+                </div>
+              </div>
+            );
+          })}
         </div>
-      ))}
-      <div style={{ borderTop: "1px solid #f1f5f9", marginTop: 6, paddingTop: 6,
-        display: "flex", justifyContent: "space-between", fontWeight: 700, color: "#0f172a" }}>
-        <span>Total</span>
-        <span>{fmt(total, 1)} {unit}</span>
+        <div style={{
+          borderTop: "1px solid #f1f5f9", marginTop: 10, paddingTop: 10,
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+        }}>
+          <span style={{ fontSize: 11.5, fontWeight: 700, color: "#64748b" }}>Total</span>
+          <span style={{ fontSize: 14, fontWeight: 900, color: "#0f172a" }}>{fmt(total, 1)} {unit}</span>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
-function CategoryBreakdownChart({ byDetail, byMode, scopeSeries, selIdx, selYear, unit }) {
+function CategoryBreakdownChart({ byDetail, byMode, scopeSeries, selIdx, selYear, unit, gas, viewMode }) {
   if (!byDetail || Object.keys(byDetail).length === 0) return null;
 
   // UPDATED: Use the new vibrant color helper
@@ -393,16 +515,17 @@ function CategoryBreakdownChart({ byDetail, byMode, scopeSeries, selIdx, selYear
   }
 
   const chartHeight = Math.max(120, barData.length * 52 + 60);
+  const scopeWord = viewMode === "stage" ? "stage" : "scope";
   const chartSubtitle = hasScopeData
-    ? `Each bar = one scope · stacked by fine-grained category · ${unit}`
+    ? `Each bar = one ${scopeWord} · stacked by fine-grained category · ${unit}`
     : `Each bar = one subsector · stacked by fine-grained category · ${unit}`;
 
   return (
     <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16,
-      padding: "20px 22px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
+      padding: "20px 22px" }}>
       <div style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 13.5, fontWeight: 700, color: "#0f172a" }}>
-          Category Breakdown — {selYear}
+          ({gas?.toUpperCase()}) Emission By {hasScopeData && viewMode === "stage" ? "Stage" : "Category"}: {selYear}
         </div>
         <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>
           {chartSubtitle}
@@ -427,7 +550,7 @@ function CategoryBreakdownChart({ byDetail, byMode, scopeSeries, selIdx, selYear
               const total = entries.reduce((s, p) => s + p.value, 0);
               return (
                 <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10,
-                  padding: "10px 14px", fontSize: 12, boxShadow: "0 4px 16px rgba(0,0,0,0.1)", minWidth: 220 }}>
+                  padding: "10px 14px", fontSize: 12, minWidth: 220 }}>
                   <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: 7, fontSize: 13 }}>{label}</div>
                   {entries.map(p => (
                     <div key={p.dataKey} style={{ display: "flex", justifyContent: "space-between",
@@ -510,165 +633,177 @@ function CategoryBreakdownChart({ byDetail, byMode, scopeSeries, selIdx, selYear
     </div>
   );
 }
-function SectorScopeCard({ scopeKey, values, info, subsectorKeys, modeData, bySubData, detailData, selIdx, selYear, unit, expanded, onToggle }) {
+function SectorScopeCard({ scopeKey, values, info, subsectorKeys, modeData, bySubData, detailData, selIdx, selYear, unit, expanded, onToggle, displayLabel }) {
   const sm = SCOPE_META[scopeKey];
+  const [pieActive, setPieActive] = useState(null);
   if (!sm) return null;
+  const accentColor  = "#3b82f6";
+  const accentLight  = "rgba(59,130,246,0.12)";
+  const accentBorder = "rgba(59,130,246,0.35)";
   const total = values?.[selIdx] ?? 0;
 
-  const rightBarData = detailData
+  const pieData = detailData
     ? Object.entries(detailData)
-        .map(([key, vals]) => ({
-          name:  IPPU_SUBCAT_LABELS[key] || (key.charAt(0).toUpperCase() + key.slice(1)),
+        .map(([key, vals], i) => ({
+          name:  IPPU_SUBCAT_LABELS[key] || (key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ")),
           value: Math.max(0, vals[selIdx] ?? 0),
-          color: IPPU_SUBCAT_COLORS[key] || "#94a3b8",
+          color: getVibrantColor(key, i),
         }))
         .filter(d => d.value > 0)
         .sort((a, b) => b.value - a.value)
     : modeData
     ? Object.entries(modeData)
-        .map(([mode, vals]) => ({
-          name:  MODE_LABELS[mode] || mode,
+        .map(([mode, vals], i) => ({
+          name:  MODE_LABELS[mode] || SUBSECTOR_LABELS[mode] || mode,
           value: Math.max(0, vals[selIdx] ?? 0),
-          color: MODE_COLORS[mode] || "#94a3b8",
+          color: MODE_COLORS[mode] || SUBSECTOR_COLORS[mode] || getVibrantColor(mode, i),
         }))
         .filter(d => d.value > 0)
         .sort((a, b) => b.value - a.value)
-    : (subsectorKeys || []).flatMap(key => {
+    : (subsectorKeys || []).flatMap((key, i) => {
         const vals = bySubData?.[key];
         if (!vals) return [];
-        return [{ name: SUBSECTOR_LABELS[key] || key, value: Math.max(0, vals[selIdx] ?? 0), color: SUBSECTOR_COLORS[key] || "#94a3b8" }];
+        return [{ name: SUBSECTOR_LABELS[key] || key, value: Math.max(0, vals[selIdx] ?? 0), color: SUBSECTOR_COLORS[key] || getVibrantColor(key, i) }];
       })
       .filter(d => d.value > 0)
       .sort((a, b) => b.value - a.value);
 
+  const pieTotal = pieData.reduce((s, d) => s + d.value, 0);
+
   return (
     <div style={{
       background: "#fff",
-      border: `1.5px solid ${expanded ? sm.color : "#e2e8f0"}`,
-      borderRadius: 16, overflow: "hidden",
-      boxShadow: expanded ? `0 8px 32px ${sm.lightColor}` : "0 1px 5px rgba(0,0,0,0.05)",
-      transition: "border-color 0.2s, box-shadow 0.2s",
+      border: "1px solid #e2e8f0",
+      borderRadius: 14, overflow: "hidden",
+      boxShadow: "none",
+      display: "flex", flexDirection: "column", height: "100%",
     }}>
+      {/* Header row */}
       <button onClick={onToggle} style={{
-        width: "100%", background: "none", border: "none", cursor: "pointer",
-        padding: "18px 20px", display: "flex", alignItems: "center", gap: 14,
-        fontFamily: "inherit", textAlign: "left",
+        width: "100%", border: "none", cursor: "pointer",
+        background: expanded ? accentLight : "#fff",
+        padding: "14px 18px", display: "flex", alignItems: "center", gap: 12,
+        fontFamily: "inherit", textAlign: "left", transition: "background 0.2s",
       }}>
-        <div style={{
-          width: 46, height: 46, borderRadius: 13, flexShrink: 0,
-          background: sm.lightColor, border: `1px solid ${sm.borderColor}`,
-          display: "flex", alignItems: "center", justifyContent: "center", color: sm.color,
-        }}>
-          {sm.icon}
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-            <span style={{
-              fontSize: 11, fontWeight: 700, color: sm.color,
-              background: sm.lightColor, border: `1px solid ${sm.borderColor}`,
-              borderRadius: 20, padding: "2px 10px", letterSpacing: 0.5,
-            }}>{sm.label}</span>
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: "#0f172a" }}>{sm.title}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 2 }}>
+            {displayLabel ? (
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: "#0f172a" }}>{displayLabel}</span>
+            ) : (
+              <>
+                <span style={{
+                  fontSize: 10, fontWeight: 800, color: "#fff", letterSpacing: 0.8,
+                  background: accentColor, borderRadius: 6, padding: "2px 8px", textTransform: "uppercase",
+                }}>{sm.label}</span>
+                <span style={{ fontSize: 13.5, fontWeight: 700, color: "#0f172a" }}>{sm.title}</span>
+              </>
+            )}
           </div>
-          <div style={{ fontSize: 11.5, color: "#64748b", lineHeight: 1.5 }}>{info?.description || ""}</div>
+          <div style={{ fontSize: 11, color: "#64748b", lineHeight: 1.5,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 500 }}>
+            {info?.description || ""}
+          </div>
         </div>
-        <div style={{ textAlign: "right", flexShrink: 0 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: sm.color, lineHeight: 1 }}>{fmt(total)}</div>
-          <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 1 }}>{unit} / yr</div>
+        <div style={{ textAlign: "right", flexShrink: 0, marginRight: 10 }}>
+          <div style={{ fontSize: 22, fontWeight: 900, color: accentColor, lineHeight: 1 }}>{fmt(total)}</div>
+          <div style={{ fontSize: 10, color: "#64748b", marginTop: 1 }}>{unit} / yr</div>
         </div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.2"
-          strokeLinecap="round" strokeLinejoin="round"
-          style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }}>
-          <path d="M6 9l6 6 6-6"/>
-        </svg>
       </button>
 
       {expanded && (
-        <div style={{ borderTop: `1px solid ${sm.borderColor}`, padding: "20px 20px 22px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-
-            {/* Left: what's included + columns */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {info?.what && (
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 900, color: sm.color, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 8 }}>
-                    What's Included
-                  </div>
-                  <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 5 }}>
-                    {info.what.map((w, i) => (
-                      <li key={i} style={{ display: "flex", gap: 8, fontSize: 12.5, color: "#334155", lineHeight: 1.4 }}>
-                        <span style={{ color: sm.color, flexShrink: 0, marginTop: 1 }}>▸</span>{w}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {info?.columns && (
-                <div style={{ background: "#f8fafc", borderRadius: 10, padding: "12px 14px" }}>
-                  <div style={{ fontSize: 10.5, fontWeight: 700, color: "#1a6585", textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 8 }}>
-                    SISEPUEDE Columns Used
-                  </div>
-                  {info.columns.map((col, i) => (
-                    <div key={i} style={{
-                      fontFamily: "monospace", fontSize: 11, color: "#475569",
-                      background: "rgba(30,112,147,0.08)", borderRadius: 5,
-                      padding: "3px 7px", marginBottom: 4, wordBreak: "break-all", lineHeight: 1.5,
-                    }}>{col}</div>
-                  ))}
-                  {info?.formula && (
-                    <div style={{ marginTop: 8, fontSize: 11, color: "#64748b" }}>
-                      <span style={{ fontWeight: 600, color: "#1a6585" }}>Formula: </span>{info.formula}
-                    </div>
-                  )}
-                </div>
-              )}
-              {info?.standard && (
-                <div style={{ fontSize: 11, color: "#94a3b8", fontStyle: "italic", borderLeft: `3px solid ${sm.borderColor}`, paddingLeft: 10 }}>
-                  {info.standard}
-                </div>
-              )}
+        <div style={{ borderTop: `2px solid ${accentBorder}`, flex: 1, display: "flex", flexDirection: "column" }}>
+          {/* Full description bar */}
+          {info?.description && (
+            <div style={{ background: accentLight, padding: "9px 18px",
+              fontSize: 12, color: "#334155", lineHeight: 1.6, borderBottom: `1px solid ${accentBorder}` }}>
+              {info.description}
             </div>
+          )}
 
-            {/* Right: breakdown bar chart */}
-            <div>
-              <div style={{ fontSize: 10.5, fontWeight: 700, color: sm.color, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 10 }}>
-                {detailData ? "Breakdown by Sub-Category" : modeData ? "Breakdown by Transport Mode" : "Breakdown by Subsector"} — {selYear}
+          <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+
+            {/* Pie chart breakdown */}
+            <div style={{ padding: "16px 16px", borderBottom: "1px solid #f1f5f9", flex: 1 }}>
+              <div style={{ fontSize: 10.5, fontWeight: 800, color: accentColor, textTransform: "uppercase",
+                letterSpacing: 0.8, marginBottom: 10 }}>
+                {detailData ? "Sub-Category Split" : modeData ? "By Mode" : "By Subsector"} — {selYear}
               </div>
-              {rightBarData.length > 0 ? (
+              {pieData.length > 0 ? (
                 <>
-                  <ResponsiveContainer width="100%" height={Math.max(140, rightBarData.length * 32 + 60)}>
-                    <BarChart data={rightBarData} margin={{ top: 4, right: 8, left: 8, bottom: 34 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                      <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 9.5 }} tickLine={false}
-                        angle={-35} textAnchor="end" interval={0}
-                        label={{ value: modeData ? "Mode" : "Subsector", position: "insideBottom", offset: -22, fill: "#94a3b8", fontSize: 9.5 }} />
-                      <YAxis tick={{ fill: "#94a3b8", fontSize: 9.5 }} tickLine={false} axisLine={false}
-                        tickFormatter={v => fmt(v)} width={52} />
-                      <Tooltip formatter={(v, _, p) => [fmt(v, 2) + " " + unit, p.payload.name]}
-                        contentStyle={{ borderRadius: 8, fontSize: 12, border: "1px solid #e2e8f0" }} />
-                      <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                        {rightBarData.map((d, i) => <Cell key={i} fill={d.color} />)}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                  <div style={{ marginTop: 4, display: "flex", flexDirection: "column", gap: 3 }}>
-                    {rightBarData.slice(0, 5).map(d => {
-                      const pct = total > 0 ? d.value / total * 100 : 0;
+                  <div style={{ position: "relative" }}>
+                    <ResponsiveContainer width="100%" height={180}>
+                      <PieChart>
+                        <Pie
+                          data={pieData}
+                          cx="50%" cy="50%"
+                          innerRadius={46} outerRadius={72}
+                          dataKey="value" paddingAngle={2}
+                          startAngle={90} endAngle={-270} strokeWidth={0}
+                          activeIndex={pieActive}
+                          activeShape={DonutActiveShape}
+                          onMouseEnter={(_, idx) => setPieActive(idx)}
+                          onMouseLeave={() => setPieActive(null)}
+                        >
+                          {pieData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                        </Pie>
+                        <Tooltip
+                          content={(props) => <DonutTooltip {...props} unit={unit} total={pieTotal} />}
+                          wrapperStyle={{ background: "transparent", border: "none", padding: 0 }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div style={{ position: "absolute", top: "50%", left: "50%",
+                      transform: "translate(-50%, -50%)", textAlign: "center", pointerEvents: "none" }}>
+                      <div style={{ fontSize: 14, fontWeight: 900, color: accentColor, lineHeight: 1 }}>{fmt(total, 1)}</div>
+                      <div style={{ fontSize: 9, color: "#64748b", marginTop: 1 }}>{unit}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 4 }}>
+                    {pieData.map(d => {
+                      const pct = pieTotal > 0 ? (d.value / pieTotal * 100).toFixed(1) : "0";
                       return (
-                        <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5 }}>
-                          <span style={{ flex: 1, color: "#475569" }}>{d.name}</span>
-                          <div style={{ width: 60, height: 5, borderRadius: 3, background: "#f1f5f9", overflow: "hidden" }}>
-                            <div style={{ width: `${Math.min(100, pct)}%`, height: "100%", background: sm.color, borderRadius: 3 }} />
-                          </div>
-                          <span style={{ color: sm.color, fontWeight: 700, width: 52, textAlign: "right" }}>{fmt(d.value, 2)}</span>
+                        <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 10.5 }}>
+                          <div style={{ width: 9, height: 9, borderRadius: 2, background: d.color, flexShrink: 0 }} />
+                          <span style={{ flex: 1, color: "#475569", fontSize: 10.5 }}>{d.name}</span>
+                          <span style={{ fontWeight: 700, color: d.color }}>{pct}%</span>
                         </div>
                       );
                     })}
                   </div>
                 </>
               ) : (
-                <div style={{ color: "#94a3b8", fontSize: 12, fontStyle: "italic", paddingTop: 20 }}>
+                <div style={{ color: "#94a3b8", fontSize: 11.5, fontStyle: "italic", paddingTop: 20 }}>
                   No breakdown data available.
+                </div>
+              )}
+            </div>
+
+            {/* What's Included */}
+            <div data-noexport style={{ padding: "16px 16px" }}>
+              <div style={{ fontSize: 10.5, fontWeight: 800, color: accentColor, textTransform: "uppercase",
+                letterSpacing: 0.8, marginBottom: 12 }}>
+                What's Included
+              </div>
+              {info?.what ? (
+                <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 7 }}>
+                  {info.what.map((w, i) => (
+                    <li key={i} style={{ display: "flex", gap: 9, fontSize: 11.5, color: "#334155", lineHeight: 1.45 }}>
+                      <span style={{
+                        width: 19, height: 19, borderRadius: 5, flexShrink: 0, marginTop: 1,
+                        background: accentColor, color: "#fff",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 9, fontWeight: 800,
+                      }}>{i + 1}</span>
+                      {w}
+                    </li>
+                  ))}
+                </ul>
+              ) : <div style={{ color: "#94a3b8", fontSize: 11.5, fontStyle: "italic" }}>No data defined.</div>}
+
+              {info?.standard && (
+                <div style={{ marginTop: 14, borderLeft: `3px solid ${accentColor}`,
+                  paddingLeft: 10, fontSize: 10.5, color: "#64748b", lineHeight: 1.5 }}>
+                  {info.standard}
                 </div>
               )}
             </div>
@@ -685,7 +820,9 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
   const [data,          setData]          = useState(null);
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState(null);
-  const [expandedScopes, setExpandedScopes] = useState({});
+  const [ghgExpanded, setGhgExpanded] = useState(false);
+  const [donutActiveIdx, setDonutActiveIdx] = useState(null);
+  const [viewMode, setViewMode] = useState("scope");
   const reportRef = useRef(null);
 
   // Load sectors list (for metadata only)
@@ -734,6 +871,16 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
       ].filter(s => s.data.some(v => v > 0))  // hide scopes with zero data
     : null;
 
+  // Apply stage labels when viewMode === "stage"
+  const displaySeries = scopeSeries
+    ? scopeSeries.map(s => ({
+        ...s,
+        label: viewMode === "stage"
+          ? (STAGE_LABELS_MAP[sector]?.[s.key] || s.label)
+          : s.label,
+      }))
+    : null;
+
   // Subsector series fallback only if no scopes at all
   const subSeries = !hasScopes && data?.by_sub
     ? Object.entries(data.by_sub).map(([key, vals], i) => ({
@@ -744,7 +891,7 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
       }))
     : null;
 
-  const activeSeries = scopeSeries || subSeries || [];
+  const activeSeries = displaySeries || subSeries || [];
 
   // Build area chart data
   const areaData = years.map((yr, i) => {
@@ -792,7 +939,7 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
     : (SUBSECTOR_LABELS[m] || MODE_LABELS[m]     || m);
   const modeBarData = byModeData
     ? (scopeSeries || []).map(s => {
-        const row = { name: s.label };
+        const row = { name: viewMode === "stage" ? (STAGE_SHORT[sector]?.[s.key] || s.key.replace("scope", "Scope ")) : s.key.replace("scope", "Scope "), fullLabel: s.label };
         activeModes.forEach(m => { row[m] = Math.max(0, byModeData[s.key]?.[m]?.[selIdx] ?? 0); });
         return row;
       })
@@ -817,11 +964,15 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
   async function exportPDF() {
     if (!reportRef.current) return;
     const { default: html2pdf } = await import("html2pdf.js");
+    const hidden = [...reportRef.current.querySelectorAll("[data-noexport]")];
+    hidden.forEach(el => { el.style.display = "none"; });
     html2pdf().set({
       margin: 8, filename: `${sector}_baseline_${region}.pdf`,
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-    }).from(reportRef.current).save();
+    }).from(reportRef.current).save().then(() => {
+      hidden.forEach(el => { el.style.display = ""; });
+    });
   }
 
   return (
@@ -849,8 +1000,9 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
       {data && !loading && (
         <div ref={reportRef} style={{
           display: "flex", flexDirection: "column", gap: 20,
-          border: "3px solid rgba(30,112,147,0.5)",
+          border: "3px solid rgba(30,112,147,1)",
           borderRadius: 20, padding: "28px 24px", position: "relative",
+          maxWidth: 1100, margin: "0 auto", width: "100%",
         }}>
 
           {/* Report header — logo | title (centered) | export button */}
@@ -859,18 +1011,15 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
               <img src="/Sustain360 - Dark Blue.png" alt="Sustain360" style={{ height: 40, objectFit: "contain" }} />
             </div>
             <div style={{ flex: 1, textAlign: "center" }}>
-              <div style={{ fontSize: 20, fontWeight: 800, color: "#0f172a", letterSpacing: -0.3 }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "#1e7093", letterSpacing: -0.3, whiteSpace: "nowrap" }}>
                 {region === "costa_rica" ? "Costa Rica" : "Mexico"}
-                <span style={{ fontWeight: 400, color: "#94a3b8", margin: "0 10px", fontSize: 14 }}>—</span>
-                <span style={{ color: "#1a6585" }}>
-                  National Emission Report
-                </span>
+                <span style={{ fontWeight: 400, color: "#1e7093", margin: "0 10px", fontSize: 14 }}>—</span>
+                National Emission Report
               </div>
-              <div style={{ fontSize: 12, color: "#64748b", marginTop: 3 }}>
-                {(() => { const SI = SECTOR_ICON_MAP[sector]; return SI ? <SI size={12} style={{ verticalAlign: "middle", marginRight: 3 }} /> : null; })()}{sectorMeta.label} · Emission Type:{" "}
-                <strong style={{ color: data.emission_type === "exact" ? "#059669" : "#d97706" }}>
-                  {data.emission_type === "exact" ? "SISEPUEDE Model (Exact)" : "Proxy Estimate"}
-                </strong>
+              {/* emission_type kept as data attr for reference: data-emission-type */}
+              <div style={{ fontSize: 15, fontWeight: 600, color: "#0f172a", marginTop: 4 }}
+                data-emission-type={data.emission_type === "exact" ? "SISEPUEDE Model (Exact)" : "Proxy Estimate"}>
+                {(() => { const SI = SECTOR_ICON_MAP[sector]; return SI ? <SI size={13} style={{ verticalAlign: "middle", marginRight: 4 }} /> : null; })()}{sectorMeta.label}
               </div>
             </div>
             <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
@@ -889,20 +1038,50 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
             </div>
           </div>
 
+          {/* Scope / Stage toggle */}
+          {hasScopes && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.6 }}>
+                View by:
+              </span>
+              <div style={{ display: "flex", background: "#f1f5f9", borderRadius: 8, padding: 3 }}>
+                {[
+                  { id: "scope", label: "Scope", sub: "GHG Protocol" },
+                  { id: "stage", label: "Stage", sub: "ISO Lifecycle" },
+                ].map(opt => (
+                  <button key={opt.id} onClick={() => setViewMode(opt.id)} style={{
+                    padding: "6px 16px", borderRadius: 6, border: "none",
+                    cursor: "pointer", fontFamily: "inherit",
+                    background: viewMode === opt.id ? "#fff" : "transparent",
+                    boxShadow: viewMode === opt.id ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
+                    color: viewMode === opt.id ? "#0f172a" : "#64748b",
+                    fontSize: 12.5, fontWeight: viewMode === opt.id ? 700 : 500,
+                    transition: "all 0.15s",
+                  }}>
+                    {opt.label}
+                    <span style={{ fontSize: 10, marginLeft: 5, color: viewMode === opt.id ? "#1e7093" : "#94a3b8" }}>
+                      {opt.sub}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Stat cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
             {statCards.map((c, i) => (
               <div key={i} style={{
                 background: "#fff", border: "1px solid #e2e8f0",
-                borderLeft: `4px solid ${c.color}`, borderRadius: 12, padding: "14px 16px",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.05)",
+                borderLeft: `4px solid ${c.color}`, borderRadius: 12, padding: "16px 18px",
+                boxShadow: "none",
               }}>
                 <div style={{ fontSize: 9.5, fontWeight: 700, color: c.color,
                   textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 6 }}>{c.label}</div>
                 <div style={{ fontSize: i === 0 ? 28 : 22, fontWeight: 900, color: "#0f172a", lineHeight: 1 }}>
                   {c.value}
                 </div>
-                <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 3 }}>
+                <div style={{ fontSize: 11, color: "#64748b", marginTop: 3 }}>
                   {c.sub}{c.pct ? ` · ${c.pct}% of total` : ""}
                 </div>
                 {c.pct && (
@@ -915,32 +1094,121 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
             ))}
           </div>
 
-          {/* Stacked area + donut */}
-          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16,
-            padding: "20px 22px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
-                  Emission Trajectory 2015–2050
-                </div>
-                <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>
-                  {(() => { const SI = SECTOR_ICON_MAP[sector]; return SI ? <SI size={13} style={{ verticalAlign: "middle", marginRight: 3 }} /> : null; })()}{sectorMeta.label} · {region === "costa_rica" ? "Costa Rica" : "Mexico"} · {unit}
+          {/* Top row: donut | scope bar */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+
+            {/* Card 1: Donut */}
+            {/* Card 1: Scope / Subsector bar */}
+            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16,
+              padding: "20px 20px", boxShadow: "none",
+              display: "flex", flexDirection: "column" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>
+                ({gas.toUpperCase()}) Emission By {hasScopes && viewMode === "stage" ? "Stage" : "Scope"}: {selYear}
+              </div>
+              <div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>
+                Each bar = one {hasScopes ? (viewMode === "stage" ? "stage" : "scope") : "subsector"} · {unit}
+              </div>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart
+                  data={activeSeries.map(s => ({
+                    name: hasScopes
+                      ? (viewMode === "stage" ? (STAGE_SHORT[sector]?.[s.key] || s.key) : s.key.replace("scope", "Scope "))
+                      : s.label,
+                    fullLabel: s.label,
+                    value: Math.max(0, s.data[selIdx] || 0),
+                    color: s.color,
+                  }))}
+                  margin={{ top: 16, right: 24, left: 0, bottom: 16 }}
+                  barCategoryGap="25%"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fill: "#334155", fontSize: 11, fontWeight: 700 }}
+                    tickLine={false} axisLine={{ stroke: "#e2e8f0" }} />
+                  <YAxis tick={{ fill: "#94a3b8", fontSize: 9.5 }} tickLine={false} axisLine={false}
+                    tickFormatter={v => fmt(v)} width={44} />
+                  <Tooltip formatter={(v, _, p) => [fmt(v, 2) + " " + unit, p.payload.fullLabel || p.payload.name]}
+                    contentStyle={{ borderRadius: 8, fontSize: 12, border: "1px solid #e2e8f0" }} />
+                  <Bar dataKey="value" radius={[5, 5, 0, 0]} maxBarSize={80}>
+                    {activeSeries.map((s, i) => <Cell key={i} fill={s.color} />)}
+                    <LabelList dataKey="value" position="top"
+                      formatter={v => fmt(v, 1)}
+                      style={{ fill: "#334155", fontSize: 10, fontWeight: 700 }} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Card 2: Donut */}
+            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16,
+              padding: "20px 20px", boxShadow: "none",
+              display: "flex", flexDirection: "column" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>
+                ({gas.toUpperCase()}) Emission Breakdown: {selYear}
+              </div>
+              <div style={{ fontSize: 11, color: "#64748b", marginBottom: 12 }}>{unit}</div>
+              <div style={{ position: "relative", width: "100%" }}>
+                <ResponsiveContainer width="100%" height={190}>
+                  <PieChart>
+                    <Pie data={donutData} cx="50%" cy="50%"
+                      innerRadius={52} outerRadius={80}
+                      dataKey="value" paddingAngle={2}
+                      startAngle={90} endAngle={-270} strokeWidth={0}
+                      activeIndex={donutActiveIdx}
+                      activeShape={DonutActiveShape}
+                      onMouseEnter={(_, idx) => setDonutActiveIdx(idx)}
+                      onMouseLeave={() => setDonutActiveIdx(null)}>
+                      {donutData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                    </Pie>
+                    <Tooltip
+                      content={(props) => <DonutTooltip {...props} unit={unit} total={totalFinal} />}
+                      position={{ x: 175 }}
+                      allowEscapeViewBox={{ x: true, y: true }}
+                      wrapperStyle={{ background: "transparent", border: "none", padding: 0, outline: "none" }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div style={{ position: "absolute", top: "50%", left: "50%",
+                  transform: "translate(-50%, -50%)", textAlign: "center", pointerEvents: "none" }}>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a", lineHeight: 1.1 }}>{fmt(totalFinal)}</div>
+                  <div style={{ fontSize: 9, color: "#64748b", marginTop: 2 }}>{unit}</div>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                {activeSeries.map(s => (
-                  <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: 2, background: s.color }} />
-                    {s.label}
+              <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 8 }}>
+                {donutData.map(d => (
+                  <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+                    <div style={{ width: 9, height: 9, borderRadius: 2, background: d.color, flexShrink: 0 }} />
+                    <span style={{ flex: 1, color: "#64748b" }}>{d.name}</span>
+                    <span style={{ fontWeight: 700, color: "#0f172a" }}>
+                      {totalFinal > 0 ? (d.value / totalFinal * 100).toFixed(1) : "0"}%
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "60% 40%", gap: 0, alignItems: "center" }}>
-              {/* Stacked area chart */}
-              <ResponsiveContainer width="100%" height={260}>
-                <AreaChart data={areaData} margin={{ top: 4, right: 12, left: 8, bottom: 22 }}>
+          </div>
+
+          {/* Bottom row: Emission Trajectory full width */}
+          <div>
+            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16,
+              padding: "20px 20px", boxShadow: "none",
+              display: "flex", flexDirection: "column" }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>
+                Emission Trajectory 2015–2050
+              </div>
+              <div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>
+                {sectorMeta.label} · {region === "costa_rica" ? "Costa Rica" : "Mexico"} · {unit}
+              </div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
+                {activeSeries.map(s => (
+                  <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10.5 }}>
+                    <div style={{ width: 9, height: 9, borderRadius: 2, background: s.color }} />
+                    {s.label}
+                  </div>
+                ))}
+              </div>
+              <ResponsiveContainer width="100%" height={250}>
+                <ComposedChart data={areaData} margin={{ top: 16, right: 12, left: 4, bottom: 8 }}>
                   <defs>
                     {activeSeries.map(s => (
                       <linearGradient key={s.key} id={`grad_${s.key}`} x1="0" y1="0" x2="0" y2="1">
@@ -950,12 +1218,14 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
                     ))}
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="year" tick={{ fill: "#94a3b8", fontSize: 10 }} tickLine={false}
-                    axisLine={{ stroke: "#e2e8f0" }} />
-                  <YAxis tick={{ fill: "#94a3b8", fontSize: 10 }} tickLine={false} axisLine={false}
-                    tickFormatter={v => fmt(v)} width={54}
+                  <XAxis dataKey="year" tick={{ fill: "#94a3b8", fontSize: 9.5 }} tickLine={false}
+                    axisLine={{ stroke: "#e2e8f0" }}
+                    ticks={[2015, 2020, 2025, 2030, 2035, 2040, 2045, 2050]}
+                    tickFormatter={v => String(v)} />
+                  <YAxis tick={{ fill: "#94a3b8", fontSize: 9.5 }} tickLine={false} axisLine={false}
+                    tickFormatter={v => fmt(v)} width={48}
                     label={{ value: unit, angle: -90, position: "insideLeft", offset: 14,
-                      fill: "#94a3b8", fontSize: 9.5 }} />
+                      fill: "#94a3b8", fontSize: 9 }} />
                   <Tooltip
                     formatter={(v, key) => {
                       const s = activeSeries.find(x => x.key === key);
@@ -966,99 +1236,49 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
                     <Area key={s.key} type="monotone" dataKey={s.key} stackId="1"
                       stroke={s.color} fill={`url(#grad_${s.key})`} strokeWidth={1.5} />
                   ))}
-                </AreaChart>
+                  <Line
+                    type="monotone"
+                    dataKey={(row) => activeSeries.reduce((sum, s) => sum + (row[s.key] || 0), 0)}
+                    stroke="transparent"
+                    strokeWidth={0}
+                    dot={(props) => {
+                      const { cx, cy, payload } = props;
+                      if (payload.year % 5 !== 0) return <g key={payload.year} />;
+                      const total = activeSeries.reduce((sum, s) => sum + (payload[s.key] || 0), 0);
+                      return (
+                        <g key={payload.year}>
+                          <circle cx={cx} cy={cy} r={4} fill="#1e7093" stroke="#fff" strokeWidth={2} />
+                          <text x={cx} y={cy - 10} textAnchor="middle"
+                            fill="#334155" fontSize={9} fontWeight="700">
+                            {fmt(total, 1)}
+                          </text>
+                        </g>
+                      );
+                    }}
+                    activeDot={false}
+                    isAnimationActive={false}
+                    legendType="none"
+                  />
+                </ComposedChart>
               </ResponsiveContainer>
-
-              {/* Donut chart */}
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center",
-                borderLeft: "1px solid #e2e8f0", paddingLeft: 20 }}>
-                <div style={{ fontSize: 10.5, fontWeight: 700, color: "#64748b",
-                  textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6 }}>
-                  {selYear} Breakdown
-                </div>
-                <div style={{ position: "relative", width: "100%" }}>
-                  <ResponsiveContainer width="100%" height={190}>
-                    <PieChart>
-                      <Pie data={donutData} cx="50%" cy="50%"
-                        innerRadius={52} outerRadius={80}
-                        dataKey="value" paddingAngle={2}
-                        startAngle={90} endAngle={-270} strokeWidth={0}>
-                        {donutData.map((d, i) => <Cell key={i} fill={d.color} />)}
-                      </Pie>
-                      <Tooltip formatter={(v, name) => [fmt(v, 2) + " " + unit, name]}
-                        contentStyle={{ borderRadius: 8, fontSize: 12, border: "1px solid #e2e8f0" }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div style={{ position: "absolute", top: "50%", left: "50%",
-                    transform: "translate(-50%, -50%)", textAlign: "center", pointerEvents: "none" }}>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: "#0f172a", lineHeight: 1.1 }}>
-                      {fmt(totalFinal)}
-                    </div>
-                    <div style={{ fontSize: 9, color: "#94a3b8", marginTop: 2 }}>{unit}</div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 5, width: "100%", paddingLeft: 12 }}>
-                  {donutData.map(d => (
-                    <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
-                      <div style={{ width: 10, height: 10, borderRadius: 2, background: d.color, flexShrink: 0 }} />
-                      <span style={{ flex: 1, color: "#64748b" }}>{d.name}</span>
-                      <span style={{ fontWeight: 700, color: "#0f172a" }}>
-                        {totalFinal > 0 ? (d.value / totalFinal * 100).toFixed(1) : "0"}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
 
-          {/* Subcategory bar chart at selected year */}
-          {activeSeries.length > 1 && (
-            <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16,
-              padding: "20px 22px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: "#0f172a", marginBottom: 4 }}>
-                {hasScopes ? "Scope" : "Subsector"} Breakdown — {selYear}
-              </div>
-              <div style={{ fontSize: 11.5, color: "#64748b", marginBottom: 16 }}>
-                Each bar = one {hasScopes ? "scope" : "subsector"} · {unit}
-              </div>
-              <ResponsiveContainer width="100%" height={180}>
-                <BarChart
-                  data={activeSeries.map(s => ({
-                    name:  s.label,
-                    value: Math.max(0, s.data[selIdx] || 0),
-                    color: s.color,
-                  }))}
-                  margin={{ top: 4, right: 20, left: 8, bottom: 28 }}
-                  barCategoryGap="25%"
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fill: "#334155", fontSize: 11, fontWeight: 600 }}
-                    tickLine={false} axisLine={{ stroke: "#e2e8f0" }} angle={-15} textAnchor="end" />
-                  <YAxis tick={{ fill: "#94a3b8", fontSize: 10 }} tickLine={false} axisLine={false}
-                    tickFormatter={v => fmt(v)} width={52} />
-                  <Tooltip formatter={(v, _, p) => [fmt(v, 2) + " " + unit, p.payload.name]}
-                    contentStyle={{ borderRadius: 8, fontSize: 12, border: "1px solid #e2e8f0" }} />
-                  <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={100}>
-                    {activeSeries.map((s, i) => <Cell key={i} fill={s.color} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+          {/* ── Page 2 starts here on export ── */}
+          <div style={{ pageBreakBefore: "always" }}>
 
           {/* Scope breakdown: stacked horizontal bar — all sectors */}
           {byModeData && modeBarData.length > 0 && activeModes.length > 0 ? (
             <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 16,
-              padding: "20px 22px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
+              padding: "20px 22px", boxShadow: "none" }}>
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700, color: "#0f172a" }}>
-                  {isTransport ? "Mode" : "Subsector"} Breakdown — {selYear}
+                  ({gas.toUpperCase()}) Emission By {isTransport ? "Mode" : "Subsector"}: {selYear}
                 </div>
                 <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>
                   {isTransport
-                    ? `Each bar = one scope · stacked by transport mode · ${unit}`
-                    : `Each bar = one scope · stacked by subsector · ${unit}`}
+                    ? `Each bar = one ${viewMode === "stage" ? "stage" : "scope"} · stacked by transport mode · ${unit}`
+                    : `Each bar = one ${viewMode === "stage" ? "stage" : "scope"} · stacked by subsector · ${unit}`}
                 </div>
               </div>
 
@@ -1070,13 +1290,30 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
                     tickLine={false} axisLine={false} tickFormatter={v => fmt(v, 1)}
                     label={{ value: `Emissions (${unit})`, position: "insideBottom", offset: -12,
                       fill: "#94a3b8", fontSize: 10.5 }} />
-                  <YAxis type="category" dataKey="name" width={160}
+                  <YAxis type="category" dataKey="name" width={64}
                     tick={{ fill: "#334155", fontSize: 11, fontWeight: 600 }}
                     tickLine={false} axisLine={false} />
                   <Tooltip content={<ModeBreakdownTooltip unit={unit} modeLabel={modeLabel} />}
                     cursor={{ fill: "rgba(30,112,147,0.05)" }} />
-                  {activeModes.map(mode => (
-                    <Bar key={mode} dataKey={mode} stackId="a" fill={modeColor(mode)} />
+                  {activeModes.map((mode, idx) => (
+                    <Bar key={mode} dataKey={mode} stackId="a" fill={modeColor(mode)}>
+                      {idx === activeModes.length - 1 && (
+                        <LabelList
+                          content={({ x, y, width, height, index }) => {
+                            const row = modeBarData[index];
+                            if (!row) return null;
+                            const total = activeModes.reduce((s, m) => s + (row[m] || 0), 0);
+                            if (total <= 0) return null;
+                            return (
+                              <text x={x + width + 6} y={y + height / 2 + 4}
+                                fill="#334155" fontSize={10.5} fontWeight="700">
+                                {fmt(total, 1)}
+                              </text>
+                            );
+                          }}
+                        />
+                      )}
+                    </Bar>
                   ))}
                 </BarChart>
               </ResponsiveContainer>
@@ -1098,26 +1335,49 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
             <CategoryBreakdownChart
               byDetail={data.by_detail}
               byMode={byModeData}
-              scopeSeries={scopeSeries}
+              scopeSeries={displaySeries}
               selIdx={selIdx}
               selYear={selYear}
               unit={unit}
+              gas={gas}
+              viewMode={viewMode}
             />
           )}
 
           {/* Scope detail cards — expandable */}
           {hasScopes && scopeSeries && scopeSeries.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div style={{ paddingBottom: 10, borderBottom: "1px solid #e2e8f0" }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>GHG Protocol Scope Detail</div>
-                <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>
-                  Expand each scope to see what's included, SISEPUEDE columns used, and subsector breakdown
+              <div style={{ paddingBottom: 10, borderBottom: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 12 }}>
+                <button onClick={() => setGhgExpanded(p => !p)} style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)",
+                  borderRadius: 8, color: "#3b82f6", fontSize: 12, fontWeight: 700,
+                  padding: "7px 14px", cursor: "pointer", fontFamily: "inherit", flexShrink: 0,
+                }}>
+                  {ghgExpanded ? "Collapse" : "Expand"}
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                    strokeLinecap="round" strokeLinejoin="round"
+                    style={{ transform: ghgExpanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
+                    <path d="M6 9l6 6 6-6"/>
+                  </svg>
+                </button>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
+                    {viewMode === "stage" ? "Lifecycle Stage Detail" : "GHG Protocol Scope Detail"}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: "#64748b", marginTop: 2 }}>
+                    {viewMode === "stage"
+                      ? "ISO 14083 lifecycle stages — what's included per stage"
+                      : "What's included and subsector breakdown for each scope"}
+                  </div>
                 </div>
               </div>
+              <div style={{ display: "grid", gridTemplateColumns: scopeSeries.length >= 2 ? `repeat(${Math.min(scopeSeries.length, 3)}, 1fr)` : "1fr", gap: 14 }}>
               {scopeSeries.map(s => {
                 const info = SECTOR_SCOPE_INFO[sector]?.[s.key];
                 const subsectorKeys = SECTOR_SCOPE_SUBSECTORS[sector]?.[s.key] || [];
                 const modeData = byModeData?.[s.key] ?? null;
+                const stageLabel = viewMode === "stage" ? (STAGE_LABELS_MAP[sector]?.[s.key] || null) : null;
                 return (
                   <SectorScopeCard
                     key={s.key}
@@ -1131,13 +1391,17 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
                     selIdx={selIdx}
                     selYear={selYear}
                     unit={unit}
-                    expanded={expandedScopes[s.key] ?? false}
-                    onToggle={() => setExpandedScopes(prev => ({ ...prev, [s.key]: !prev[s.key] }))}
+                    expanded={ghgExpanded}
+                    onToggle={() => setGhgExpanded(p => !p)}
+                    displayLabel={stageLabel}
                   />
                 );
               })}
+              </div>
             </div>
           )}
+
+          </div>{/* end page-2 wrapper */}
 
         </div>
       )}

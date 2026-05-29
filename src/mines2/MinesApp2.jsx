@@ -91,9 +91,9 @@ function IconChevron({ dir }) {
   );
 }
 
-export default function MinesApp2({ user, onBack, onLogout }) {
+export default function MinesApp2({ user, onBack, onLogout, initialMineId }) {
   const [mines,       setMines]       = useState([]);
-  const [mineId,      setMineId]      = useState(null);
+  const [mineId,      setMineId]      = useState(initialMineId || null);
   const [screen,      setScreen]      = useState("dcf"); // Changed default to "dcf" since it's now first
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState(null);
@@ -109,7 +109,7 @@ export default function MinesApp2({ user, onBack, onLogout }) {
           sub:   `${m.license_number}${m.province ? ` · ${m.province}` : ""}`,
         }));
         setMines(list);
-        if (list.length > 0) setMineId(list[0].id);
+        if (!initialMineId && list.length > 0) setMineId(list[0].id);
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));

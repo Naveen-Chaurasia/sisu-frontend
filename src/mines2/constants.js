@@ -1,6 +1,16 @@
 // constants.js — shared lookup tables for the Mines2 (Supabase) Investment Modeling module
 // Re-exports everything from the original mines/constants.js
 
+const MINE_NAME_ALIASES = {
+  "Chinaka Resource Mining 3": "Mine C3",
+  "M'Gomo Mine": "Mine G",
+};
+
+export function maskMineName(name) {
+  if (!name) return name;
+  return MINE_NAME_ALIASES[name] ?? name;
+}
+
 export const PROVINCES = [
   "Cabo Delgado","Gaza","Inhambane","Manica","Maputo","Nampula",
   "Niassa","Sofala","Tete","Zambezia",
