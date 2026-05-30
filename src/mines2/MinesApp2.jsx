@@ -6,18 +6,54 @@ import FinancialModelDCF2    from "./FinancialModelDCF2";
 import NPVBridge2            from "./NPVBridge2";
 import MineMap2              from "./MineMap2";
 import SensitivityAnalysis2  from "./SensitivityAnalysis2";
+import MonteCarlo2           from "./MonteCarlo2";
+import MineProfile2          from "./MineProfile2";
+import MineRegistry2         from "./MineRegistry2";
 import { fetchMinesList } from "./api";
 
 const MINE_COLORS = ["#1e7093", "#7c3aed"];
 
-// REORDERED: Financial Model first, Exec Summary last
+function IconDice() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="2" width="20" height="20" rx="3"/>
+      <circle cx="8"  cy="8"  r="1.2" fill="currentColor" stroke="none"/>
+      <circle cx="16" cy="8"  r="1.2" fill="currentColor" stroke="none"/>
+      <circle cx="8"  cy="16" r="1.2" fill="currentColor" stroke="none"/>
+      <circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none"/>
+      <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/>
+    </svg>
+  );
+}
+function IconProfile() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 20h20M4 20V10l8-8 8 8v10M10 20v-6h4v6"/>
+      <circle cx="12" cy="11" r="1.5" fill="currentColor" stroke="none"/>
+    </svg>
+  );
+}
+function IconRegistry() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <line x1="3" y1="9" x2="21" y2="9"/>
+      <line x1="3" y1="15" x2="21" y2="15"/>
+      <line x1="9" y1="9" x2="9" y2="21"/>
+    </svg>
+  );
+}
+
 const SCREENS = [
-  { id: "dcf",         label: "Financial Model",    icon: IconTable       },
-  { id: "scenarios",   label: "Scenario Analysis",  icon: IconScenario    },
-  { id: "sensitivity", label: "Sensitivity",        icon: IconSensitivity },
-  { id: "bridge",      label: "NPV Bridge",         icon: IconBridge      },
-  { id: "map",         label: "Mine Map",           icon: IconMap         },
-  { id: "exec",        label: "Exec Summary",       icon: IconMemo        },
+  { id: "registry",    label: "Mine Registry",                  icon: IconRegistry    },
+  { id: "profile",     label: "Mine Profile",                   icon: IconProfile     },
+  { id: "dcf",         label: "Financial Model",                icon: IconTable       },
+  { id: "montecarlo",  label: "Mine Analysis via Monte Carlo",  icon: IconDice        },
+  { id: "scenarios",   label: "Scenario Analysis",              icon: IconScenario    },
+  { id: "sensitivity", label: "Sensitivity",                    icon: IconSensitivity },
+  { id: "bridge",      label: "NPV Bridge",                     icon: IconBridge      },
+  { id: "map",         label: "Mine Map",                       icon: IconMap         },
+  { id: "exec",        label: "Exec Summary",                   icon: IconMemo        },
 ];
 
 function IconMemo() {
@@ -90,11 +126,18 @@ function IconChevron({ dir }) {
     </svg>
   );
 }
+function IconPlus() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  );
+}
 
 export default function MinesApp2({ user, onBack, onLogout, initialMineId }) {
   const [mines,       setMines]       = useState([]);
   const [mineId,      setMineId]      = useState(initialMineId || null);
-  const [screen,      setScreen]      = useState("dcf"); // Changed default to "dcf" since it's now first
+  const [screen,      setScreen]      = useState("registry");
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -305,6 +348,25 @@ export default function MinesApp2({ user, onBack, onLogout, initialMineId }) {
                   </button>
                 );
               })}
+
+              {/* New Mine shortcut */}
+              <button
+                onClick={() => { setMineId(null); setScreen("profile"); }}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(16,185,129,0.18)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "rgba(16,185,129,0.1)"; }}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 8,
+                  padding: "8px 12px", borderRadius: 8, marginTop: 10,
+                  background: "rgba(16,185,129,0.1)",
+                  border: "1px dashed rgba(16,185,129,0.4)",
+                  color: "#34d399", fontSize: 12, fontWeight: 600,
+                  cursor: "pointer", textAlign: "left", fontFamily: "inherit",
+                  transition: "background 0.15s",
+                }}
+              >
+                <IconPlus />
+                New Mine
+              </button>
             </nav>
 
             {/* Footer */}
@@ -341,15 +403,27 @@ export default function MinesApp2({ user, onBack, onLogout, initialMineId }) {
               Failed to load mines: {error}
             </div>
           )}
-          {!mineId && !loading && !error && screen !== "map" && (
+          {!mineId && !loading && !error && screen !== "map" && screen !== "profile" && (
             <div style={{ padding: 48, color: THEME.muted, fontSize: 14 }}>
               No mines found in database.
             </div>
+          )}
+          {screen === "registry"  && <MineRegistry2 mines={mines} onSelectMine={id => { setMineId(id); setScreen("profile"); }} />}
+          {screen === "profile"   && (
+            <MineProfile2
+              mineId={mineId}
+              onCreated={newMine => {
+                const m = { ...newMine, color: MINE_COLORS[mines.length % MINE_COLORS.length], label: newMine.mine_name, sub: newMine.license_number || "" };
+                setMines(prev => [...prev, m]);
+                setMineId(newMine.id);
+              }}
+            />
           )}
            {mineId && screen === "dcf"       && <FinancialModelDCF2 mineId={mineId} mineColor={mineInfo?.color || THEME.primary} />}
           
           {mineId && screen === "scenarios"   && <ScenarioAnalysis2    mineId={mineId} mineColor={mineInfo?.color || THEME.primary} />}
           {mineId && screen === "sensitivity" && <SensitivityAnalysis2  mineId={mineId} mineColor={mineInfo?.color || THEME.primary} />}
+          {mineId && screen === "montecarlo"  && <MonteCarlo2           mineId={mineId} />}
           {mineId && screen === "bridge"      && <NPVBridge2            mineId={mineId} mineColor={mineInfo?.color || THEME.primary} />}
           {screen === "map"                 && <MineMap2 onSelectMine={(id) => { setMineId(id); setScreen("exec"); }} />}
             {mineId && screen === "exec"      && <ExecSummary2       mineId={mineId} mineColor={mineInfo?.color || THEME.primary} />}

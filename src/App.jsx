@@ -190,6 +190,14 @@ function Login({ onLogin }) {
           </div>
         </div>
       </div>
+
+      {/* Bottom-right copyright */}
+      <div style={{
+        position: "fixed", bottom: 16, right: 20,
+        fontSize: 11, color: "#94a3b8",
+      }}>
+        © {new Date().getFullYear()} Sustain360.ai · All rights reserved
+      </div>
     </div>
   );
 }
