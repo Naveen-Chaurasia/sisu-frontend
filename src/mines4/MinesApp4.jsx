@@ -115,14 +115,14 @@ const SCREENS = [
   { id: "bridge",      label: "NPV Bridge",                    icon: IconBridge      },
   { id: "scenarios",   label: "Scenario Analysis",             icon: IconScenario    },
   { id: "montecarlo",  label: "Mine Analysis via Monte Carlo", icon: IconDice        },
-  { id: "sensitivity", label: "Sensitivity Analysis",          icon: IconSensitivity },
-  { id: "exec",        label: "Exec Summary",                  icon: IconMemo        },
+  // { id: "sensitivity", label: "Sensitivity Analysis",          icon: IconSensitivity },
+  // { id: "exec",        label: "Exec Summary",                  icon: IconMemo        },
 ];
 
 const MINE_COLORS = ["#1e7093", "#7c3aed", "#10b981", "#f59e0b", "#ef4444"];
 
 export default function MinesApp4({ user, onBack, onLogout, initialMineId }) {
-  const [screen,      setScreen]      = useState(initialMineId && initialMineId !== "__new__" ? "financial" : (initialMineId === "__new__" ? "profile" : "registry"));
+  const [screen,      setScreen]      = useState(initialMineId ? "profile" : "registry");
   const [mines,       setMines]       = useState([]);
   const [selMineId,   setSelMineId]   = useState(initialMineId && initialMineId !== "__new__" ? initialMineId : null);
   const [loading,     setLoading]     = useState(false);

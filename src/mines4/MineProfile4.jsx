@@ -416,6 +416,118 @@ function ChartCard({ title, accentColor, children, span }) {
   );
 }
 
+// ── RiskTable — shared editable table for Risk Factors & Environmental Impact ──
+const LEVEL_COLORS = { Low: "#10b981", Moderate: "#f59e0b", High: "#ef4444", Critical: "#7c3aed" };
+
+function RiskTable({ rows, onChange, columns, newRowTemplate }) {
+  const [draft, setDraft] = useState(null);
+
+  const addRow = () => setDraft({ ...newRowTemplate });
+  const commitDraft = () => {
+    const key = columns[0].key;
+    if (!draft[key]?.trim()) return;
+    onChange([...rows, draft]);
+    setDraft(null);
+  };
+  const deleteRow = i => onChange(rows.filter((_, idx) => idx !== i));
+  const editRow = (i, k, v) => onChange(rows.map((r, idx) => idx === i ? { ...r, [k]: v } : r));
+
+  const thStyle = { padding: "8px 10px", fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.7)",
+    textTransform: "uppercase", letterSpacing: 0.6, textAlign: "left", whiteSpace: "nowrap" };
+  const tdStyle = { padding: "6px 8px", fontSize: 12, borderBottom: "1px solid #f1f5f9", verticalAlign: "middle" };
+
+  return (
+    <div style={{ borderRadius: 10, overflow: "hidden", border: "1px solid #e2e8f0" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <thead>
+          <tr style={{ background: "linear-gradient(135deg, #0f2d4a 0%, #1e4976 100%)" }}>
+            {columns.map(c => <th key={c.key} style={{ ...thStyle, width: c.width }}>{c.label}</th>)}
+            <th style={{ ...thStyle, width: "4%" }} />
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 && !draft && (
+            <tr><td colSpan={columns.length + 1} style={{ padding: "20px", textAlign: "center", color: "#94a3b8", fontSize: 12 }}>
+              No entries yet — click <strong>+ Add Row</strong> below.
+            </td></tr>
+          )}
+          {rows.map((row, i) => (
+            <tr key={i} style={{ background: i % 2 === 0 ? "#fff" : "#f8fafc" }}>
+              {columns.map(c => (
+                <td key={c.key} style={tdStyle}>
+                  {c.type === "select" ? (
+                    <select value={row[c.key] || ""} onChange={e => editRow(i, c.key, e.target.value)}
+                      style={{ fontSize: 11, border: "1px solid #e2e8f0", borderRadius: 5, padding: "3px 6px",
+                        background: "#fff", color: c.key === "risk_level" ? (LEVEL_COLORS[row[c.key]] || "#334155") : "#334155",
+                        fontWeight: c.key === "risk_level" ? 700 : 400, outline: "none", width: "100%" }}>
+                      {c.opts.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  ) : (
+                    <input value={row[c.key] || ""} onChange={e => editRow(i, c.key, e.target.value)}
+                      style={{ fontSize: 11, border: "1px solid #e2e8f0", borderRadius: 5, padding: "3px 7px",
+                        width: "100%", outline: "none", background: "#fff" }} />
+                  )}
+                </td>
+              ))}
+              <td style={{ ...tdStyle, textAlign: "center" }}>
+                <button onClick={() => deleteRow(i)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", fontSize: 14, padding: 2 }}>✕</button>
+              </td>
+            </tr>
+          ))}
+          {draft && (
+            <tr style={{ background: "#eff6ff" }}>
+              {columns.map(c => (
+                <td key={c.key} style={tdStyle}>
+                  {c.type === "select" ? (
+                    <select value={draft[c.key] || ""} onChange={e => setDraft(p => ({ ...p, [c.key]: e.target.value }))}
+                      style={{ fontSize: 11, border: "1px solid #93c5fd", borderRadius: 5, padding: "3px 6px",
+                        background: "#fff", outline: "none", width: "100%" }}>
+                      {c.opts.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  ) : (
+                    <input value={draft[c.key] || ""} onChange={e => setDraft(p => ({ ...p, [c.key]: e.target.value }))}
+                      placeholder={c.label}
+                      style={{ fontSize: 11, border: "1px solid #93c5fd", borderRadius: 5, padding: "3px 7px",
+                        width: "100%", outline: "none", background: "#fff" }} />
+                  )}
+                </td>
+              ))}
+              <td style={{ ...tdStyle, textAlign: "center" }}>
+                <button onClick={commitDraft}
+                  style={{ background: "#10b981", border: "none", cursor: "pointer", color: "#fff",
+                    borderRadius: 4, fontSize: 11, padding: "3px 7px", fontWeight: 700 }}>✓</button>
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+      <div style={{ padding: "8px 12px", borderTop: "1px solid #f1f5f9", background: "#fafafa" }}>
+        {!draft ? (
+          <button onClick={addRow}
+            style={{ fontSize: 11, fontWeight: 700, color: THEME.primary, background: "none",
+              border: `1px dashed ${THEME.primary}`, borderRadius: 6, padding: "4px 12px", cursor: "pointer" }}>
+            + Add Row
+          </button>
+        ) : (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={commitDraft}
+              style={{ fontSize: 11, fontWeight: 700, color: "#fff", background: "#10b981",
+                border: "none", borderRadius: 6, padding: "4px 12px", cursor: "pointer" }}>
+              Save Row
+            </button>
+            <button onClick={() => setDraft(null)}
+              style={{ fontSize: 11, color: "#64748b", background: "none",
+                border: "1px solid #e2e8f0", borderRadius: 6, padding: "4px 12px", cursor: "pointer" }}>
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ════════════════════════════════════════════════════════════════════
@@ -599,7 +711,8 @@ export default function MineProfile4({ mineId, onCreated, onReload, onNavigate, 
 
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 300, flexDirection: "column", gap: 12 }}>
-      <div style={{ width: 36, height: 36, borderRadius: "50%", border: `3px solid ${THEME.border}`, borderTopColor: THEME.primary, animation: "spin 0.8s linear infinite" }} />
+      <style>{`@keyframes chakra-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      <img src="/S360_Logo_Chakra.png" alt="" style={{ width: 40, height: 40, objectFit: "contain", animation: "chakra-spin 1.2s linear infinite" }} />
       <div style={{ color: THEME.muted, fontSize: 13 }}>Loading mine profile…</div>
     </div>
   );
@@ -1065,6 +1178,40 @@ export default function MineProfile4({ mineId, onCreated, onReload, onNavigate, 
           })}
         </Section>
       )}
+
+      {/* ── Section: Risk Factors ────────────────────────────────────────── */}
+      <Section title="Risk Factors" open={open.risks} onToggle={() => toggle("risks")} badge={(ed.risk_factors || []).length}>
+        <RiskTable
+          rows={ed.risk_factors || []}
+          onChange={rows => { set("risk_factors", rows); }}
+          columns={[
+            { key: "risk_name",  label: "Risk Name",  type: "text",   width: "22%" },
+            { key: "risk_level", label: "Risk Level", type: "select", opts: RISK_LEVELS, width: "10%" },
+            { key: "type",       label: "Type",       type: "select", opts: RISK_TYPES,  width: "14%" },
+            { key: "probability",label: "Probability",type: "select", opts: PROB_OPTS,   width: "14%" },
+            { key: "duration",   label: "Duration",   type: "select", opts: DURATIONS,   width: "12%" },
+            { key: "intensity",  label: "Intensity",  type: "select", opts: INTENSITY,   width: "10%" },
+            { key: "notes",      label: "Notes",      type: "text",   width: "18%" },
+          ]}
+          newRowTemplate={{ risk_name: "", risk_level: "Low", type: "Operational", probability: "Low", duration: "Short-term", intensity: "Low", notes: "" }}
+        />
+      </Section>
+
+      {/* ── Section: Environmental Impact ────────────────────────────────── */}
+      <Section title="Environmental Impact" open={open.env} onToggle={() => toggle("env")} badge={(ed.environmental_impacts || []).length}>
+        <RiskTable
+          rows={ed.environmental_impacts || []}
+          onChange={rows => { set("environmental_impacts", rows); }}
+          columns={[
+            { key: "impact",     label: "Impact",     type: "text",   width: "28%" },
+            { key: "risk_level", label: "Risk Level", type: "select", opts: RISK_LEVELS, width: "12%" },
+            { key: "probability",label: "Probability",type: "select", opts: PROB_OPTS,   width: "16%" },
+            { key: "intensity",  label: "Intensity",  type: "select", opts: INTENSITY,   width: "12%" },
+            { key: "notes",      label: "Notes",      type: "text",   width: "32%" },
+          ]}
+          newRowTemplate={{ impact: "", risk_level: "Low", probability: "Low", intensity: "Low", notes: "" }}
+        />
+      </Section>
 
       {/* ── Bottom Charts ──────────────────────────────────────────────── */}
       {costVsIrr.length > 0 && (

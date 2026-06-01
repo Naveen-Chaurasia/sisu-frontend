@@ -142,6 +142,7 @@ export default function FinancialModel4({ mineId }) {
   const [dcf,        setDcf]        = useState(null);
   const [running,    setRunning]    = useState(false);
   const [loading,    setLoading]    = useState(false);
+  const [recalcing,  setRecalcing]  = useState(false);
   const [err,        setErr]        = useState(null);
 
   const loadAll = useCallback(async (id) => {
@@ -171,10 +172,11 @@ export default function FinancialModel4({ mineId }) {
 
   useEffect(() => {
     if (!selScen) return;
-    setDcf(null);
+    setRecalcing(true);
     calculateScenario(mineId, selScen.id)
       .then(d => setDcf(d))
-      .catch(() => setDcf(null));
+      .catch(() => {})
+      .finally(() => setRecalcing(false));
   }, [selScen, mineId]);
 
   const handleRun = async () => {
@@ -204,6 +206,7 @@ export default function FinancialModel4({ mineId }) {
   const allRows  = dcf?.years || dcf?.rows || dcf?.dcf_rows || [];
   const rows     = allRows.filter(r => r.year > 0);
   const metrics = dcf?.metrics || selScen;
+  const xTicks   = rows.filter(r => r.year % 5 === 0).map(r => `Y${r.year}`);
 
   const chartData = rows.map(r => ({
     year:     `Y${r.year}`,
@@ -349,7 +352,7 @@ export default function FinancialModel4({ mineId }) {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                  <XAxis dataKey="year" tick={{ fontSize: 9, fill: "#64748b" }} interval={Math.floor(chartData.length / 10)} />
+                  <XAxis dataKey="year" tick={{ fontSize: 9, fill: "#64748b" }} ticks={xTicks} />
                   <YAxis tick={{ fontSize: 10, fill: "#64748b" }} tickFormatter={v => `$${nc(v, 0)}mm`} width={58} />
                   <Tooltip contentStyle={{ background: "#fff", border: `1px solid ${THEME.border}`, borderRadius: 8, fontSize: 11 }}
                     formatter={(v, n) => [v != null ? `$${nc(v, 2)}mm` : "—", n]} />
@@ -373,7 +376,7 @@ export default function FinancialModel4({ mineId }) {
               <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={chartData} margin={{ top: 4, right: 12, bottom: 20, left: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                  <XAxis dataKey="year" tick={{ fontSize: 9, fill: "#64748b" }} interval={Math.floor(chartData.length / 10)} />
+                  <XAxis dataKey="year" tick={{ fontSize: 9, fill: "#64748b" }} ticks={xTicks} />
                   <YAxis tick={{ fontSize: 10, fill: "#64748b" }} tickFormatter={v => `$${nc(v, 0)}mm`} width={58} />
                   <Tooltip contentStyle={{ background: "#fff", border: `1px solid ${THEME.border}`, borderRadius: 8, fontSize: 11 }}
                     formatter={(v, n) => [v != null ? `$${nc(Math.abs(v), 2)}mm` : "—", n]} />
@@ -400,7 +403,7 @@ export default function FinancialModel4({ mineId }) {
             <ResponsiveContainer width="100%" height={300}>
               <ComposedChart data={chartData} margin={{ top: 4, right: 12, bottom: 20, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis dataKey="year" tick={{ fontSize: 9, fill: "#64748b" }} interval={Math.floor(chartData.length / 10)} />
+                <XAxis dataKey="year" tick={{ fontSize: 9, fill: "#64748b" }} ticks={xTicks} />
                 <YAxis tick={{ fontSize: 10, fill: "#64748b" }} tickFormatter={v => `$${nc(v, 0)}mm`} width={58} />
                 <Tooltip contentStyle={{ background: "#fff", border: `1px solid ${THEME.border}`, borderRadius: 8, fontSize: 11 }}
                   formatter={(v, n) => [v != null ? `$${v.toFixed(2)}mm` : "—", n]} />
