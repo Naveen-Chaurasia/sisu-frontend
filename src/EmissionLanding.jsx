@@ -68,7 +68,7 @@ export default function EmissionLanding({ user, onSelectCountry, onBack, onLogou
           NATIONAL EMISSION MODELING
         </div>
         <h1 style={{ fontSize: 40, fontWeight: 900, color: "#0f2d4a", margin: "0 0 14px", letterSpacing: -0.8, lineHeight: 1.15 }}>
-          Select a <span style={{ color: "#1e7093" }}>Country</span>
+          National Emission <span style={{ color: "#1e7093" }}>Modeling</span>
         </h1>
         <p style={{ fontSize: 15, color: "#64748b", lineHeight: 1.7, maxWidth: 480, margin: "0 auto" }}>
           Choose a country to explore emission baselines, run policy simulations, and model decarbonization pathways.
