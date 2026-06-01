@@ -20,6 +20,7 @@ const TABS = [
 const REGIONS = [
   { id: "costa_rica", label: "Costa Rica", abbr: "CR" },
   { id: "mexico",     label: "Mexico",     abbr: "MX" },
+  { id: "uganda",     label: "Uganda",     abbr: "UG" },
 ];
 
 const GASES = [
@@ -166,9 +167,9 @@ function SectorFilterDropdown({ enabledSectors, onToggleSector, onToggleAll }) {
   );
 }
 
-export default function AppV2({ user, onBack, onLogout }) {
+export default function AppV2({ user, onBack, onLogout, initialRegion = "costa_rica" }) {
   const [pageTab,        setPageTab]        = useState("emissions");
-  const [region,         setRegion]         = useState("costa_rica");
+  const [region,         setRegion]         = useState(initialRegion);
   const [gas,            setGas]            = useState("co2");
   const [enabledSectors, setEnabledSectors] = useState(() =>
     Object.fromEntries(ALL_SECTORS.map(s => [s, ["transport", "agriculture"].includes(s)]))

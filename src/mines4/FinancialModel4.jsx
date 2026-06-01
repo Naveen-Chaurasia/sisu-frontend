@@ -201,7 +201,8 @@ export default function FinancialModel4({ mineId }) {
     </div>
   );
 
-  const rows    = (dcf?.years || dcf?.rows || dcf?.dcf_rows || []).filter(r => r.year > 0);
+  const allRows  = dcf?.years || dcf?.rows || dcf?.dcf_rows || [];
+  const rows     = allRows.filter(r => r.year > 0);
   const metrics = dcf?.metrics || selScen;
 
   const chartData = rows.map(r => ({
@@ -441,7 +442,7 @@ export default function FinancialModel4({ mineId }) {
             </div>
           </div>
 
-          {rows.length > 0 && (
+          {allRows.length > 0 && (
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, tableLayout: "auto" }}>
                 <thead>
@@ -457,7 +458,7 @@ export default function FinancialModel4({ mineId }) {
                       whiteSpace: "nowrap", minWidth: 50 }}>
                       Unit
                     </th>
-                    {rows.map(r => (
+                    {allRows.map(r => (
                       <th key={r.year} style={{ padding: "8px 10px", textAlign: "right", fontSize: 10,
                         fontWeight: 700, color: r.year === 0 ? "#ef4444" : "#64748b",
                         letterSpacing: 0.4, borderBottom: `1px solid ${THEME.border}`,
@@ -472,7 +473,7 @@ export default function FinancialModel4({ mineId }) {
                     <>
                       {/* Section header row */}
                       <tr key={`sec-${si}`}>
-                        <td colSpan={2 + rows.length}
+                        <td colSpan={2 + allRows.length}
                           style={{ padding: "7px 14px", fontWeight: 800, fontSize: 10,
                             letterSpacing: 0.8, textTransform: "uppercase",
                             background: SECTION_BG, color: SECTION_FG, borderTop: "2px solid #0a1f35" }}>
@@ -485,7 +486,7 @@ export default function FinancialModel4({ mineId }) {
                         if (rowDef.spacer) {
                           return (
                             <tr key={`sp-${si}-${ri}`}>
-                              <td colSpan={2 + rows.length} style={{ height: 6, background: "#f8fafc" }} />
+                              <td colSpan={2 + allRows.length} style={{ height: 6, background: "#f8fafc" }} />
                             </tr>
                           );
                         }
@@ -516,7 +517,7 @@ export default function FinancialModel4({ mineId }) {
                               {rowDef.unit}
                             </td>
                             {/* Year values */}
-                            {rows.map(yearRow => {
+                            {allRows.map(yearRow => {
                               const raw = rowDef.key ? yearRow[rowDef.key] : null;
                               const formatted = rowDef.fmt(raw);
                               return (

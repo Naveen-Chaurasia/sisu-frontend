@@ -4,6 +4,7 @@ import { fetchMinesList, invalidateCache } from "./api4";
 import MineRegistry4     from "./MineRegistry4";
 import MineProfile4      from "./MineProfile4";
 import FinancialModel4   from "./FinancialModel4";
+import NPVBridge4        from "./NPVBridge4";
 import ScenarioAnalysis4 from "./ScenarioAnalysis4";
 import MonteCarlo4       from "./MonteCarlo4";
 import Sensitivity4      from "./Sensitivity4";
@@ -76,6 +77,14 @@ function IconMemo() {
     </svg>
   );
 }
+function IconBridge() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 20V10l4-6 4 6 4-6 4 6v10"/>
+      <line x1="4" y1="20" x2="20" y2="20"/>
+    </svg>
+  );
+}
 function IconMine() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -103,6 +112,7 @@ const SCREENS = [
   { id: "registry",    label: "Mine Registry",                 icon: IconRegistry    },
   { id: "profile",     label: "Mine Profile",                  icon: IconProfile     },
   { id: "financial",   label: "Financial Model",               icon: IconTable       },
+  { id: "bridge",      label: "NPV Bridge",                    icon: IconBridge      },
   { id: "scenarios",   label: "Scenario Analysis",             icon: IconScenario    },
   { id: "montecarlo",  label: "Mine Analysis via Monte Carlo", icon: IconDice        },
   { id: "sensitivity", label: "Sensitivity Analysis",          icon: IconSensitivity },
@@ -395,8 +405,9 @@ export default function MinesApp4({ user, onBack, onLogout, initialMineId }) {
         <div style={{ flex: 1, overflow: "auto" }}>
           <div style={{ padding: 28 }}>
             {screen === "registry"    && <MineRegistry4    mines={mines} onSelectMine={handleSelectMine} />}
-            {screen === "profile"     && <MineProfile4     mineId={selMineId} onCreated={handleCreated} onReload={loadMines} onNavigate={setScreen} />}
+            {screen === "profile"     && <MineProfile4     mineId={selMineId} onCreated={handleCreated} onReload={loadMines} onNavigate={setScreen} onDeleted={() => { loadMines(); setSelMineId(null); setScreen("registry"); }} />}
             {screen === "financial"   && <FinancialModel4  mineId={selMineId} />}
+            {screen === "bridge"      && <NPVBridge4       mineId={selMineId} mineColor={selMine?.color} />}
             {screen === "scenarios"   && <ScenarioAnalysis4 mineId={selMineId} />}
             {screen === "montecarlo"  && <MonteCarlo4      mineId={selMineId} />}
             {screen === "sensitivity" && <Sensitivity4     mineId={selMineId} />}

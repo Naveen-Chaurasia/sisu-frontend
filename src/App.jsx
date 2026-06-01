@@ -4,11 +4,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { supabase } from "./supabaseClient";
 import ScopeModeling from "./ScopeModeling";
 import AppV2 from "./v2/AppV2";
-import MinesApp from "./mines/MinesApp";
-import MinesApp2 from "./mines2/MinesApp2";
 import MinesApp4 from "./mines4/MinesApp4";
 import Mines4Landing from "./mines4/Mines4Landing";
-import InvestmentLanding from "./InvestmentLanding";
+import EmissionLanding from "./EmissionLanding";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const G = "linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%)";
@@ -205,7 +203,9 @@ function Login({ onLogin }) {
 }
 
 // ── Welcome / Mode selection ─────────────────────────────────────────────────
-function Welcome({ user, onSelect, onLogout, onBack }) {
+const COUNTRY_LABELS = { costa_rica: "Costa Rica", mexico: "Mexico", uganda: "Uganda" };
+
+function Welcome({ user, onSelect, onLogout, onBack, country }) {
   const NAV = (
     <div style={{ background: G, padding: "0 32px", display: "flex", alignItems: "center", height: 58, boxShadow: "0 2px 12px rgba(26,101,133,0.3)" }}>
       {/* Left: Logo + Projects button */}
@@ -299,7 +299,7 @@ function Welcome({ user, onSelect, onLogout, onBack }) {
         <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 1200 }}>
           <div style={{ marginBottom: 14, textAlign: "center" }}>
             <h1 style={{ fontSize: 40, fontWeight: 900, color: "#0f2d4a", margin: 0, letterSpacing: -0.8, lineHeight: 1.15 }}>
-              National Emission<br />
+              {country ? <>{COUNTRY_LABELS[country]} <span style={{ fontSize: 24, fontWeight: 900, color: "#94a3b8" }}>-</span></> : "National"} Emission<br />
               <span style={{ color: "#1e7093" }}>Decarbonization Modeling</span>
             </h1>
           </div>
@@ -547,9 +547,7 @@ function ProjectSelector({ user, onSelect, onLogout }) {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, maxWidth: 720, margin: "0 auto" }}>
             {PROJECTS.map(p => (
               <div key={p.id} className="proj-border-wrap"
-                onClick={p.id === "investment"
-                  ? (user?.toLowerCase() !== "naveen" ? () => onSelect("investment_supabase") : undefined)
-                  : () => onSelect(p.id)}
+                onClick={() => onSelect(p.id === "investment" ? "mines4" : p.id)}
               >
                 <div className="proj-card-inner">
                   <div style={{ width: 52, height: 52, borderRadius: 14, background: `${p.color}18`, border: `1px solid ${p.color}30`, display: "flex", alignItems: "center", justifyContent: "center", color: p.color }}>
@@ -563,63 +561,12 @@ function ProjectSelector({ user, onSelect, onLogout }) {
                     {p.badge}
                   </div>
 
-                  {p.id === "investment" ? (
-                    <div style={{ width: "100%", marginTop: 4 }} onClick={e => e.stopPropagation()}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 700, color: p.color, marginBottom: user?.toLowerCase() === "naveen" ? 10 : 0 }}>
-                        Open Project
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
-                      </div>
-                      {user?.toLowerCase() === "naveen" && (
-                        <div style={{ display: "flex", gap: 10 }}>
-                          <button
-                            onClick={() => onSelect("investment")}
-                            style={{
-                              flex: 1, padding: "9px 10px", borderRadius: 10, border: `2px solid #0f4c6b`,
-                              background: "#0f4c6b", color: "#fff", fontSize: 12, fontWeight: 700,
-                              cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.background = "#0a3655"}
-                            onMouseLeave={e => e.currentTarget.style.background = "#0f4c6b"}
-                          >
-                            Synthetic Data
-                          </button>
-                          <button
-                            onClick={() => onSelect("investment_supabase")}
-                            style={{
-                              flex: 1, padding: "9px 10px", borderRadius: 10, border: `2px solid #1e7093`,
-                              background: "#1e7093", color: "#fff", fontSize: 12, fontWeight: 700,
-                              cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.background = "#165f7a"}
-                            onMouseLeave={e => e.currentTarget.style.background = "#1e7093"}
-                          >
-                            Real Data
-                          </button>
-                          <button
-                            onClick={() => onSelect("mines4")}
-                            style={{
-                              flex: 1, padding: "9px 10px", borderRadius: 10, border: `2px solid #10b981`,
-                              background: "#10b981", color: "#fff", fontSize: 12, fontWeight: 700,
-                              cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.background = "#059669"}
-                            onMouseLeave={e => e.currentTarget.style.background = "#10b981"}
-                          >
-                            Mines v4
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 700, color: p.color, marginTop: 2 }}>
-                      Open Project
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M5 12h14M12 5l7 7-7 7"/>
-                      </svg>
-                    </div>
-                  )}
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 700, color: p.color, marginTop: 2 }}>
+                    Open Project
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                  </div>
                 </div>
               </div>
             ))}
@@ -890,8 +837,8 @@ export default function App() {
   const location                        = useLocation();
   const [authUser, setAuthUser]         = useState(null);
   const [mode, setMode]                 = useState(null);
-  const [selectedMineId,  setSelectedMineId]  = useState(null);
-  const [selectedMine4Id, setSelectedMine4Id] = useState(null);
+  const [selectedMine4Id,  setSelectedMine4Id]  = useState(null);
+  const [selectedCountry,  setSelectedCountry]  = useState(null);
   const [region, setRegion]             = useState("costa_rica");
   const [nlText, setNlText]             = useState("");
   const [selectedGoal, setSelectedGoal] = useState(null);
@@ -916,13 +863,6 @@ export default function App() {
     });
     return () => subscription.unsubscribe();
   }, []);
-
-  // Reset mine selection when leaving investment route
-  useEffect(() => {
-    if (!location.pathname.startsWith("/projects/investmentmodeling")) {
-      setSelectedMineId(null);
-    }
-  }, [location.pathname]);
 
   // Fetch available gases whenever region changes
   useEffect(() => {
@@ -986,11 +926,8 @@ export default function App() {
 
   function handleProjectSelect(proj) {
     setMode(null);
-    if (proj === "investment")
-      navigate("/projects/investmentmodeling", { state: { classic: true } });
-    else if (proj === "investment_supabase")
-      navigate("/projects/investmentmodeling");
-    else if (proj === "mines4")
+    setSelectedCountry(null);
+    if (proj === "mines4")
       navigate("/projects/mines4");
     else
       navigate("/projects/emissionmodeling");
@@ -1006,21 +943,15 @@ export default function App() {
       return <Mines4Landing user={authUser} onSelectMine={setSelectedMine4Id} onBack={() => navigate("/projects")} onLogout={handleLogout} />;
     return <MinesApp4 user={authUser} initialMineId={selectedMine4Id} onBack={() => setSelectedMine4Id(null)} onLogout={handleLogout} />;
   }
-  if (pathname.startsWith("/projects/investmentmodeling")) {
-    if (location.state?.classic)
-      return <MinesApp user={authUser} onBack={() => navigate("/projects")} onLogout={handleLogout} />;
-    if (!selectedMineId)
-      return <InvestmentLanding user={authUser} onSelectMine={setSelectedMineId} onBack={() => navigate("/projects")} onLogout={handleLogout} />;
-    return <MinesApp2 user={authUser} initialMineId={selectedMineId} onBack={() => setSelectedMineId(null)} onLogout={handleLogout} />;
-  }
   if (pathname.startsWith("/projects/emissionmodeling")) {
-    if (!mode) return <Welcome user={authUser} onSelect={setMode} onBack={() => navigate("/projects")} onLogout={handleLogout} />;
-    if (mode === "scope") return (
-      <ScopeModeling user={authUser} onBack={() => setMode(null)} onLogout={handleLogout} />
-    );
-    if (mode === "emissions_v2") return (
-      <AppV2 user={authUser} onBack={() => setMode(null)} onLogout={handleLogout} />
-    );
+    if (!selectedCountry)
+      return <EmissionLanding user={authUser} onSelectCountry={c => { setSelectedCountry(c); setRegion(c); setMode(null); }} onBack={() => navigate("/projects")} onLogout={handleLogout} />;
+    if (!mode)
+      return <Welcome user={authUser} country={selectedCountry} onSelect={setMode} onBack={() => setSelectedCountry(null)} onLogout={handleLogout} />;
+    if (mode === "scope")
+      return <ScopeModeling user={authUser} onBack={() => setMode(null)} onLogout={handleLogout} />;
+    if (mode === "emissions_v2")
+      return <AppV2 user={authUser} initialRegion={selectedCountry} onBack={() => setMode(null)} onLogout={handleLogout} />;
   }
 
   if (!pathname.startsWith("/projects/emissionmodeling")) return <Navigate to="/projects" />;
@@ -1167,8 +1098,9 @@ export default function App() {
                   <div style={lbl}>Region / Baseline</div>
                   <div style={{ display: "flex", gap: 8 }}>
                     {[
-                      { id: "costa_rica", label: "Costa Rica", flag: "🇨🇷" },
-                      { id: "mexico",     label: "Mexico",     flag: "🇲🇽" },
+                      { id: "costa_rica", label: "Costa Rica", flagCode: "cr" },
+                      { id: "mexico",     label: "Mexico",     flagCode: "mx" },
+                      { id: "uganda",     label: "Uganda",     flagCode: "ug" },
                     ].map(r => {
                       const active = region === r.id;
                       return (
@@ -1182,7 +1114,7 @@ export default function App() {
                           boxShadow: active ? "0 4px 14px rgba(30,112,147,0.28)" : "none",
                           transition: "all 0.15s",
                         }}>
-                          <span style={{ fontSize: 17 }}>{r.flag}</span> {r.label}
+                          <img src={`https://flagcdn.com/w20/${r.flagCode}.png`} alt={r.label} style={{ height: 14, borderRadius: 2 }} /> {r.label}
                         </button>
                       );
                     })}
@@ -1260,8 +1192,9 @@ export default function App() {
                 <div style={lbl}>Region / Baseline</div>
                 <div style={{ display: "flex", gap: 8 }}>
                   {[
-                    { id: "costa_rica", label: "Costa Rica", flag: "🇨🇷" },
-                    { id: "mexico",     label: "Mexico",     flag: "🇲🇽" },
+                    { id: "costa_rica", label: "Costa Rica", flagCode: "cr" },
+                    { id: "mexico",     label: "Mexico",     flagCode: "mx" },
+                    { id: "uganda",     label: "Uganda",     flagCode: "ug" },
                   ].map(r => {
                     const active = region === r.id;
                     return (
@@ -1275,7 +1208,7 @@ export default function App() {
                         boxShadow: active ? "0 4px 14px rgba(30,112,147,0.28)" : "none",
                         transition: "all 0.15s",
                       }}>
-                        <span style={{ fontSize: 17 }}>{r.flag}</span> {r.label}
+                        <img src={`https://flagcdn.com/w20/${r.flagCode}.png`} alt={r.label} style={{ height: 14, borderRadius: 2 }} /> {r.label}
                       </button>
                     );
                   })}

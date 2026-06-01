@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { THEME, SCENARIO_COLORS } from "./constants4";
-import { fetchMine, fetchScenarios, fetchExecSummary } from "./api4";
+import { fetchMine, fetchScenarios, fetchExecSummary, calculateScenario } from "./api4";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -61,7 +61,20 @@ export default function ExecSummary4({ mineId }) {
         fetchExecSummary(id).catch(() => null),
       ]);
       setMine(m.mine || m);
-      setScenList(s.scenarios || []);
+      const rawScens = s.scenarios || [];
+
+      // Recalculate metrics fresh for every scenario using the same engine as Financial Model
+      const recalced = await Promise.all(
+        rawScens.map(async (scen) => {
+          try {
+            const res = await calculateScenario(id, scen.id);
+            return { ...scen, ...res.metrics };
+          } catch {
+            return scen;
+          }
+        })
+      );
+      setScenList(recalced);
       setSummary(ex);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -77,6 +90,12 @@ export default function ExecSummary4({ mineId }) {
 
   const baseScens = scenList.filter(s => s.scenario === "Base" || s.scenario === "Single");
   const allCommods = [...new Set(scenList.map(s => s.commodity))].filter(Boolean);
+
+  // Best Base/Single scenario by NPV
+  const bestBase = baseScens.reduce((best, s) => {
+    if (!best || (s.npv != null && (best.npv == null || s.npv > best.npv))) return s;
+    return best;
+  }, null);
 
   // Aggregate best metrics from Base/Single scenarios
   const bestMetrics = baseScens.reduce((acc, s) => {
@@ -139,16 +158,66 @@ export default function ExecSummary4({ mineId }) {
       {/* Top KPIs */}
       <Section title="Key Performance Indicators">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
-          <KPICard label="NPV (Base)"   value={fmtM(bestMetrics.npv)}    color={THEME.primary}  large />
-          <KPICard label="IRR (Base)"   value={fmtPc(bestMetrics.irr)}   color="#10b981"        large />
-          <KPICard label="MOIC"         value={fmtXx(bestMetrics.moic)}  color="#f59e0b"        large />
+          <KPICard label="NPV (Base)"   value={fmtM(bestBase?.npv)}    color={THEME.primary}  large />
+          <KPICard label="IRR (Base)"   value={fmtPc(bestBase?.irr)}   color="#10b981"        large />
+          <KPICard label="MOIC"         value={fmtXx(bestBase?.moic)}  color="#f59e0b"        large />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-          <KPICard label="Payback"       value={bestMetrics.payback || "—"}  color="#8b5cf6" />
+          <KPICard label="Payback"       value={bestBase?.payback != null ? `${bestBase.payback} yr` : "—"}  color="#8b5cf6" />
           <KPICard label="Life of Mine"  value={mine?.life_of_mine_yr ? `${mine.life_of_mine_yr} yr` : "—"}  color="#06b6d4" />
-          <KPICard label="Total CAPEX"   value={fmtM(bestMetrics.total_capex)} color="#ef4444" />
+          <KPICard label="Total CAPEX"   value={fmtM(bestBase?.total_capex)} color="#ef4444" />
         </div>
       </Section>
+
+      {/* Valuation & Returns Summary */}
+      {bestBase && (
+        <Section title="Valuation & Returns Summary">
+          <div style={{ background: "#fff", borderRadius: 12, border: `1px solid ${THEME.border}`, overflow: "hidden" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: `linear-gradient(135deg, ${THEME.primaryDark} 0%, ${THEME.primary} 100%)` }}>
+                  <th style={{ padding: "10px 16px", textAlign: "left", fontSize: 11, fontWeight: 700,
+                    color: "#bfdbfe", letterSpacing: 0.5 }}>Metric</th>
+                  <th style={{ padding: "10px 16px", textAlign: "right", fontSize: 11, fontWeight: 700,
+                    color: "#bfdbfe", letterSpacing: 0.5 }}>Value</th>
+                  <th style={{ padding: "10px 16px", textAlign: "left", fontSize: 11, fontWeight: 700,
+                    color: "#bfdbfe", letterSpacing: 0.5 }}>Unit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { label: "NPV (Base Case)",            val: fmtM(bestBase.npv),                    unit: "$M",     highlight: true,  color: bestBase.npv >= 0 ? "#10b981" : "#ef4444" },
+                  { label: "IRR",                        val: fmtPc(bestBase.irr),                   unit: "%",      highlight: true,  color: THEME.primary },
+                  { label: "Payback Period",             val: bestBase.payback != null ? `${bestBase.payback} yr` : "—", unit: "years", color: "#8b5cf6" },
+                  { label: "MOIC",                       val: fmtXx(bestBase.moic),                  unit: "×",      color: "#f59e0b" },
+                  { label: "Unit Margin ($)",            val: bestBase.unit_margin_dollar != null ? `$${nc(bestBase.unit_margin_dollar, 0)}` : "—", unit: "$/unit", color: "#0ea5e9" },
+                  { label: "Unit Margin (%)",            val: fmtPc(bestBase.unit_margin_pct),        unit: "%",      color: "#0ea5e9" },
+                  { label: "Total LOM Revenue",          val: fmtM(bestBase.total_lom_revenue),       unit: "$M",     highlight: true,  color: THEME.primaryDark },
+                  { label: "Total LOM Free Cash Flow",   val: fmtM(bestBase.total_lom_fcf),           unit: "$M",     color: THEME.primary },
+                  { label: "Total Mineral Produced",     val: bestBase.total_mineral_produced != null ? `${nc(bestBase.total_mineral_produced, 0)}` : "—", unit: "kg", color: "#334155" },
+                  { label: "Total Cost per Mineral Unit",val: bestBase.total_cost_per_unit != null ? `$${nc(bestBase.total_cost_per_unit, 0)}` : "—", unit: "$/unit", color: "#64748b" },
+                ].map(({ label, val, unit, highlight, color }, ri) => (
+                  <tr key={label} style={{ background: highlight ? "#f0f9ff" : ri % 2 === 0 ? "#fff" : "#fafafa" }}>
+                    <td style={{ padding: "9px 16px", color: "#475569", fontWeight: highlight ? 700 : 500,
+                      borderBottom: `1px solid ${THEME.border}`, fontSize: highlight ? 12.5 : 12 }}>{label}</td>
+                    <td style={{ padding: "9px 16px", textAlign: "right", fontWeight: 800,
+                      color: color || "#334155", fontSize: highlight ? 14 : 12,
+                      borderBottom: `1px solid ${THEME.border}` }}>{val}</td>
+                    <td style={{ padding: "9px 16px", color: "#94a3b8", fontSize: 10, fontWeight: 600,
+                      borderBottom: `1px solid ${THEME.border}` }}>{unit}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {bestBase.commodity && (
+              <div style={{ padding: "8px 16px", background: "#f8fafc", fontSize: 10,
+                color: THEME.muted, borderTop: `1px solid ${THEME.border}` }}>
+                Based on <strong>{bestBase.commodity}</strong> — {bestBase.scenario || "Base"} scenario
+              </div>
+            )}
+          </div>
+        </Section>
+      )}
 
       {/* Mine overview */}
       <Section title="Mine Overview">

@@ -6,7 +6,8 @@ import {
 import { THEME, CHART_COLORS, SCENARIO_COLORS, PROVINCES, MINE_TYPES, STATUSES,
   RISK_LEVELS, PROB_OPTS, INTENSITY, RISK_TYPES, DURATIONS, COMMODITIES, PRICE_UNITS } from "./constants4";
 import { fetchMine, fetchDCF, updateMine, createMine, addCommodity,
-  deleteCommodity, updateScenario, calculateMine, invalidateCache } from "./api4";
+  deleteCommodity, updateScenario, calculateMine, invalidateCache,
+  deleteScenario, deleteMine } from "./api4";
 
 const nc    = (v, d = 1) => v == null ? "—" : Number(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
 const fmtM  = v => v == null ? "—" : `${v < 0 ? "-$" : "$"}${nc(Math.abs(v), 2)}M`;
@@ -217,7 +218,7 @@ function ScenRow({ scen, mineId, onSaved, alwaysOpen }) {
 }
 
 // ── Commodity card ─────────────────────────────────────────────────────────────
-function CommodityCard({ comm, mineId, onReload }) {
+function CommodityCard({ comm, mineId, onReload, onDeleteComm, onDeleteScen }) {
   const [open, setOpen] = useState(true);
   const commColor = getCommColor(comm.commodity);
   const sorted = (comm.scenarios || []).slice().sort((a, b) => {
@@ -248,33 +249,45 @@ function CommodityCard({ comm, mineId, onReload }) {
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button onClick={e => { e.stopPropagation(); if (window.confirm(`Delete ${comm.commodity}?`)) deleteCommodity(mineId, comm.id).then(onReload); }}
-            style={{ padding: "3px 9px", fontSize: 11, background: "rgba(255,255,255,0.2)", color: "#fff",
-              border: "1px solid rgba(255,255,255,0.3)", borderRadius: 5, cursor: "pointer" }}>✕</button>
+          <button onClick={e => { e.stopPropagation(); onDeleteComm?.(comm.id, comm.commodity); }}
+            title="Delete commodity"
+            style={{ padding: "4px 9px", fontSize: 11, background: "rgba(255,255,255,0.2)", color: "#fff",
+              border: "1px solid rgba(255,255,255,0.3)", borderRadius: 5, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+          </button>
           <span style={{ fontSize: 16, color: "rgba(255,255,255,0.85)", transform: open ? "rotate(180deg)" : "none", transition: "0.2s" }}>▾</span>
         </div>
       </div>
       {open && (
         <div style={{ background: "#fff", borderTop: `2px solid ${commColor}30` }}>
           {/* Scenario pills */}
-          {sorted.length > 1 && (
+          {sorted.length > 0 && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px",
-              borderBottom: "1px solid #f1f5f9", background: "#fafcfe" }}>
+              borderBottom: "1px solid #f1f5f9", background: "#fafcfe", flexWrap: "wrap" }}>
               {sorted.map(s => {
                 const active = selScenario === s.scenario;
-                return active ? (
-                  <button key={s.id} onClick={() => setSelScenario(s.scenario)} style={{
-                    padding: "5px 15px", fontSize: 11, fontWeight: 700, borderRadius: 5,
-                    border: "none", background: GRAD_BORDER,
-                    color: "#fff", cursor: "pointer", fontFamily: "inherit",
-                  }}>{s.scenario}</button>
-                ) : (
-                  <div key={s.id} style={{ background: GRAD_BORDER, borderRadius: 5, padding: 1.5 }}>
-                    <button onClick={() => setSelScenario(s.scenario)} style={{
-                      padding: "3.5px 13.5px", fontSize: 11, fontWeight: 700, borderRadius: 3.5,
-                      border: "none", background: "#fff",
-                      color: "#1e7093", cursor: "pointer", fontFamily: "inherit",
-                    }}>{s.scenario}</button>
+                return (
+                  <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    {active ? (
+                      <button onClick={() => setSelScenario(s.scenario)} style={{
+                        padding: "5px 15px", fontSize: 11, fontWeight: 700, borderRadius: 5,
+                        border: "none", background: GRAD_BORDER,
+                        color: "#fff", cursor: "pointer", fontFamily: "inherit",
+                      }}>{s.scenario}</button>
+                    ) : (
+                      <div style={{ background: GRAD_BORDER, borderRadius: 5, padding: 1.5 }}>
+                        <button onClick={() => setSelScenario(s.scenario)} style={{
+                          padding: "3.5px 13.5px", fontSize: 11, fontWeight: 700, borderRadius: 3.5,
+                          border: "none", background: "#fff",
+                          color: "#1e7093", cursor: "pointer", fontFamily: "inherit",
+                        }}>{s.scenario}</button>
+                      </div>
+                    )}
+                    <button onClick={() => onDeleteScen?.(s.id, `${s.scenario} — ${comm.commodity}`)}
+                      title="Delete scenario"
+                      style={{ padding: "3px 5px", background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 4, cursor: "pointer", display: "flex", alignItems: "center" }}>
+                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                    </button>
                   </div>
                 );
               })}
@@ -406,7 +419,7 @@ function ChartCard({ title, accentColor, children, span }) {
 // ════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ════════════════════════════════════════════════════════════════════
-export default function MineProfile4({ mineId, onCreated, onReload, onNavigate }) {
+export default function MineProfile4({ mineId, onCreated, onReload, onNavigate, onDeleted }) {
   const [mine,       setMine]       = useState(null);
   const [loading,    setLoading]    = useState(false);
   const [ed,         setEd]         = useState({});
@@ -420,6 +433,7 @@ export default function MineProfile4({ mineId, onCreated, onReload, onNavigate }
   const [simDcf,     setSimDcf]     = useState({});
   const [calcLoading,setCalcLoading]= useState(false);
   const [calcErr,    setCalcErr]    = useState(null);
+  const [confirmDel, setConfirmDel] = useState(null); // { type: "mine"|"commodity"|"scenario", id, label }
 
   const isNew = !mineId;
   const toggle = k => setOpen(o => ({ ...o, [k]: !o[k] }));
@@ -557,6 +571,24 @@ export default function MineProfile4({ mineId, onCreated, onReload, onNavigate }
       return { name: s.commodity, WACC: +((s.wacc || mine?.wacc || 0)*100).toFixed(1), IRR: +((met.irr||0)*100).toFixed(1) };
     }).filter(Boolean);
 
+  const handleDelete = async () => {
+    if (!confirmDel) return;
+    try {
+      if (confirmDel.type === "mine") {
+        await deleteMine(mineId);
+        invalidateCache();
+        onDeleted?.();
+      } else if (confirmDel.type === "commodity") {
+        await deleteCommodity(mineId, confirmDel.id);
+        load();
+      } else if (confirmDel.type === "scenario") {
+        await deleteScenario(mineId, confirmDel.id);
+        load();
+      }
+    } catch (e) { alert("Delete failed: " + e.message); }
+    finally { setConfirmDel(null); }
+  };
+
   if (loading) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 300, flexDirection: "column", gap: 12 }}>
       <div style={{ width: 36, height: 36, borderRadius: "50%", border: `3px solid ${THEME.border}`, borderTopColor: THEME.primary, animation: "spin 0.8s linear infinite" }} />
@@ -632,8 +664,42 @@ export default function MineProfile4({ mineId, onCreated, onReload, onNavigate }
               {saving ? "Saving…" : isNew ? "Create Mine" : "Save Changes"}
             </button>
           )}
+          {!isNew && (
+            <button onClick={() => setConfirmDel({ type: "mine", id: mineId, label: mine?.mine_name })}
+              title="Delete this mine"
+              style={{ padding: "9px 12px", fontSize: 12, fontWeight: 700, background: "#fee2e2", color: "#ef4444", border: "1px solid #fca5a5", borderRadius: 9, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5 }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              Delete Mine
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Delete confirmation modal */}
+      {confirmDel && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ background: "#fff", borderRadius: 14, padding: "28px 32px", maxWidth: 380, width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "#0f2d4a", marginBottom: 8 }}>
+              {confirmDel.type === "mine" ? "Delete Mine?" : confirmDel.type === "commodity" ? "Delete Commodity?" : "Delete Scenario?"}
+            </div>
+            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 24, lineHeight: 1.6 }}>
+              Permanently delete <strong>{confirmDel.label}</strong>
+              {confirmDel.type === "mine" && " and all its commodities, scenarios, metrics and DCF data"}.
+              {" "}This cannot be undone.
+            </div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button onClick={() => setConfirmDel(null)}
+                style={{ padding: "8px 18px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#475569" }}>
+                Cancel
+              </button>
+              <button onClick={handleDelete}
+                style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#ef4444", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {calcErr && (
         <div style={{ background: "#fef2f2", color: "#ef4444", padding: "10px 16px", borderRadius: 10,
@@ -853,7 +919,9 @@ export default function MineProfile4({ mineId, onCreated, onReload, onNavigate }
           {(mine?.commodities || [])
             .filter(c => !selCommName || c.commodity === selCommName)
             .map(c => (
-              <CommodityCard key={c.id} comm={c} mineId={mineId} onReload={() => { load(); onReload?.(); }} />
+              <CommodityCard key={c.id} comm={c} mineId={mineId} onReload={() => { load(); onReload?.(); }}
+                onDeleteComm={(id, label) => setConfirmDel({ type: "commodity", id, label })}
+                onDeleteScen={(id, label) => setConfirmDel({ type: "scenario", id, label })} />
             ))}
         </Section>
       )}
@@ -946,6 +1014,11 @@ export default function MineProfile4({ mineId, onCreated, onReload, onNavigate }
                         {[
                           { label: "Total CAPEX",  val: fmtM(met.total_capex),   color: "#ef4444" },
                           { label: "LOM FCF",      val: fmtM(met.total_lom_fcf), color: THEME.primary },
+                          { label: "Total LOM Revenue", val: fmtM(met.total_lom_revenue), color: THEME.primaryDark },
+                          { label: "Total Mineral Produced", val: met.total_mineral_produced != null ? `${nc(met.total_mineral_produced, 0)} kg` : "—", color: "#334155" },
+                          { label: "Cost per Mineral Unit", val: met.total_cost_per_unit != null ? `$${nc(met.total_cost_per_unit, 0)}/kg` : "—", color: "#64748b" },
+                          { label: "Unit Margin ($)", val: met.unit_margin_dollar != null ? `$${nc(met.unit_margin_dollar, 0)}/kg` : "—", color: "#0ea5e9" },
+                          { label: "Unit Margin (%)", val: fmtPc(met.unit_margin_pct), color: "#0ea5e9" },
                         ].map(({ label, val, color }) => (
                           <div key={label} style={{ display: "flex", justifyContent: "space-between",
                             alignItems: "center", padding: "5px 0", borderBottom: `1px dashed #f1f5f9`, fontSize: 12 }}>

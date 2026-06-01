@@ -47,5 +47,11 @@ export const addCommodity       = (mineId, data) =>
 export const deleteCommodity    = (mineId, commId) =>
   fetch(`${BASE}/mines/${mineId}/commodities/${commId}`, { method: "DELETE" }).then(_json);
 
+export const deleteScenario     = (mineId, scenId) =>
+  fetch(`${BASE}/mines/${mineId}/scenarios/${scenId}`, { method: "DELETE" }).then(_json);
+
+export const deleteMine         = (mineId) =>
+  fetch(`${BASE}/mines/${mineId}`, { method: "DELETE" }).then(_json);
+
 export const updateScenario     = (mineId, scenId, patch) =>
   fetch(`${BASE}/mines/${mineId}/scenarios/${scenId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) }).then(_json);
