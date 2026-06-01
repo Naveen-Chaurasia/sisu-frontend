@@ -9,7 +9,7 @@ import {
   SECTOR_ICON_MAP, IconInfo,
 } from "./Icons";
 
-const G = "radial-gradient(circle at 17.9167% 91.6667%, rgb(30,112,147) 0%, 17.5%, rgb(26,101,133) 100%)";
+const G = "linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%)";
 
 const TABS = [
   { id: "emissions",  label: "National Emissions", Icon: IconBarChart },

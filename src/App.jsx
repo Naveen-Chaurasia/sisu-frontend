@@ -6,10 +6,12 @@ import ScopeModeling from "./ScopeModeling";
 import AppV2 from "./v2/AppV2";
 import MinesApp from "./mines/MinesApp";
 import MinesApp2 from "./mines2/MinesApp2";
+import MinesApp4 from "./mines4/MinesApp4";
+import Mines4Landing from "./mines4/Mines4Landing";
 import InvestmentLanding from "./InvestmentLanding";
 
 // ── Constants ────────────────────────────────────────────────────────────────
-const G = "radial-gradient(circle at 17.9167% 91.6667%, rgb(30, 112, 147) 0%, 17.5%, rgb(26, 101, 133) 100%)";
+const G = "linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%)";
 
 const ALL_GAS_OPTIONS = ["co2", "ch4", "n2o"];
 const GAS_LABELS = {
@@ -278,7 +280,7 @@ function Welcome({ user, onSelect, onLogout, onBack }) {
 
       {/* ── Hero (full page) ── */}
       <div style={{
-        background: "linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%)",
+        background: "#ffffff",
         minHeight: "calc(100vh - 56px)",
         padding: "20px 32px 32px",
         textAlign: "center",
@@ -295,15 +297,13 @@ function Welcome({ user, onSelect, onLogout, onBack }) {
         <div style={{ position: "absolute", bottom: -100, left: -60, width: 320, height: 320, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.04)", pointerEvents: "none" }} />
 
         <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 1200 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 14, justifyContent: "center" }}>
-            <img src="/Sustain360 - Dark Blue.png" alt="Sustain360"
-              style={{ height: 52, objectFit: "contain", filter: "brightness(0) invert(1)", opacity: 0.9, flexShrink: 0 }} />
-            <h1 style={{ fontSize: 40, fontWeight: 900, color: "#fff", margin: 0, letterSpacing: -0.8, lineHeight: 1.15, textAlign: "left" }}>
+          <div style={{ marginBottom: 14, textAlign: "center" }}>
+            <h1 style={{ fontSize: 40, fontWeight: 900, color: "#0f2d4a", margin: 0, letterSpacing: -0.8, lineHeight: 1.15 }}>
               National Emission<br />
-              <span style={{ color: "#67c5e0" }}>Decarbonization Modeling</span>
+              <span style={{ color: "#1e7093" }}>Decarbonization Modeling</span>
             </h1>
           </div>
-          <p style={{ fontSize: 15.5, color: "rgba(255,255,255,0.6)", lineHeight: 1.8, maxWidth: 500, margin: "0 auto 32px" }}>
+          <p style={{ fontSize: 15.5, color: "#64748b", lineHeight: 1.8, maxWidth: 500, margin: "0 auto 32px" }}>
             Design, simulate, and evaluate national transport decarbonization strategies with AI-powered climate impact insights. Powered by Sustain360.ai
           </p>
 
@@ -313,11 +313,11 @@ function Welcome({ user, onSelect, onLogout, onBack }) {
             {MODES.map((m) => {
               const isEmissions = m.id === "emissions_v2";
               const cardStyle = {
-                background: "rgba(255,255,255,0.92)",
-                border: "1px solid rgba(255,255,255,0.4)",
+                background: "linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%)",
+                border: "none",
                 borderLeft: "5px solid #67c5e0",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.1)",
-                borderRadius: 16,
+                boxShadow: "0 4px 24px rgba(15,45,74,0.25), 0 1px 4px rgba(0,0,0,0.12)",
+                borderRadius: 8,
                 padding: "26px 24px 22px",
                 fontFamily: "inherit",
                 display: "flex",
@@ -325,28 +325,25 @@ function Welcome({ user, onSelect, onLogout, onBack }) {
                 alignItems: "flex-start",
                 gap: 12,
                 textAlign: "left",
-                backdropFilter: "blur(12px)",
                 transition: "all 0.2s",
               };
 
               const cardInner = (
                 <>
-                  <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
-                    <div style={{
-                      width: 44, height: 44, borderRadius: 11,
-                      background: "rgba(103,197,224,0.15)",
-                      border: "1px solid rgba(103,197,224,0.3)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      color: "#67c5e0",
-                    }}>
-                      {m.icon}
-                    </div>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 11,
+                    background: "rgba(103,197,224,0.18)",
+                    border: "1px solid rgba(103,197,224,0.35)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "#67c5e0", flexShrink: 0,
+                  }}>
+                    {m.icon}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", marginBottom: 7 }}>{m.title}</div>
-                    <div style={{ fontSize: 12.5, color: "#64748b", lineHeight: 1.7 }}>{m.desc}</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "#fff", marginBottom: 7 }}>{m.title}</div>
+                    <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.65)", lineHeight: 1.7 }}>{m.desc}</div>
                   </div>
-                  <div style={{ fontSize: 10.5, fontWeight: 700, color: "#67c5e0", background: "rgba(103,197,224,0.12)", borderRadius: 20, padding: "3px 11px" }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 700, color: "#fff", background: "rgba(255,255,255,0.15)", borderRadius: 20, padding: "3px 11px" }}>
                     Best for: {m.best}
                   </div>
                 </>
@@ -355,21 +352,21 @@ function Welcome({ user, onSelect, onLogout, onBack }) {
               if (isEmissions) {
                 return (
                   <div key={m.id} style={{ ...cardStyle, cursor: "default" }}
-                    onMouseEnter={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 16px 40px rgba(0,0,0,0.2)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.92)"; e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 16px 40px rgba(15,45,74,0.35)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 4px 24px rgba(15,45,74,0.25)"; }}
                   >
                     {cardInner}
                     {/* v1 / v2 launch buttons */}
                     <div style={{ width: "100%", display: "flex", gap: 8, marginTop: 2 }}>
                       <button onClick={() => onSelect("scope")} style={{
                         flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
-                        fontSize: 12, fontWeight: 700, color: "#67c5e0",
-                        background: "rgba(103,197,224,0.10)", border: "1.5px solid rgba(103,197,224,0.35)",
+                        fontSize: 12, fontWeight: 700, color: "#fff",
+                        background: "rgba(255,255,255,0.12)", border: "1.5px solid rgba(255,255,255,0.3)",
                         borderRadius: 8, padding: "7px 0", cursor: "pointer", fontFamily: "inherit",
                         transition: "all 0.15s",
                       }}
-                        onMouseEnter={e => { e.currentTarget.style.background = "rgba(103,197,224,0.22)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = "rgba(103,197,224,0.10)"; }}
+                        onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.22)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.12)"; }}
                       >
                         Transport
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -397,11 +394,11 @@ function Welcome({ user, onSelect, onLogout, onBack }) {
 
               return (
                 <button key={m.id} onClick={() => onSelect(m.id)} style={{ ...cardStyle, cursor: "pointer" }}
-                  onMouseEnter={e => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 16px 40px rgba(0,0,0,0.2)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.92)"; e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 16px 40px rgba(15,45,74,0.35)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 4px 24px rgba(15,45,74,0.25)"; }}
                 >
                   {cardInner}
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#67c5e0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#fff" }}>
                     {m.cta}
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -413,8 +410,8 @@ function Welcome({ user, onSelect, onLogout, onBack }) {
           </div>
 
           {/* Footer note */}
-          <div style={{ marginTop: 36, fontSize: 11.5, color: "rgba(255,255,255,0.3)" }}>
-            Powered by <strong style={{ color: "rgba(255,255,255,0.55)" }}>Sustain360.ai</strong> · GHG Protocol aligned · ISO 14083
+          <div style={{ marginTop: 36, fontSize: 11.5, color: "rgba(15,45,74,0.4)" }}>
+            Powered by <strong style={{ color: "#1e7093" }}>Sustain360.ai</strong> · GHG Protocol aligned · ISO 14083
           </div>
         </div>
       </div>
@@ -599,6 +596,18 @@ function ProjectSelector({ user, onSelect, onLogout }) {
                             onMouseLeave={e => e.currentTarget.style.background = "#1e7093"}
                           >
                             Real Data
+                          </button>
+                          <button
+                            onClick={() => onSelect("mines4")}
+                            style={{
+                              flex: 1, padding: "9px 10px", borderRadius: 10, border: `2px solid #10b981`,
+                              background: "#10b981", color: "#fff", fontSize: 12, fontWeight: 700,
+                              cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = "#059669"}
+                            onMouseLeave={e => e.currentTarget.style.background = "#10b981"}
+                          >
+                            Mines v4
                           </button>
                         </div>
                       )}
@@ -881,7 +890,8 @@ export default function App() {
   const location                        = useLocation();
   const [authUser, setAuthUser]         = useState(null);
   const [mode, setMode]                 = useState(null);
-  const [selectedMineId, setSelectedMineId] = useState(null);
+  const [selectedMineId,  setSelectedMineId]  = useState(null);
+  const [selectedMine4Id, setSelectedMine4Id] = useState(null);
   const [region, setRegion]             = useState("costa_rica");
   const [nlText, setNlText]             = useState("");
   const [selectedGoal, setSelectedGoal] = useState(null);
@@ -980,6 +990,8 @@ export default function App() {
       navigate("/projects/investmentmodeling", { state: { classic: true } });
     else if (proj === "investment_supabase")
       navigate("/projects/investmentmodeling");
+    else if (proj === "mines4")
+      navigate("/projects/mines4");
     else
       navigate("/projects/emissionmodeling");
   }
@@ -989,6 +1001,11 @@ export default function App() {
   if (!authUser) return <Login onLogin={u => { setAuthUser(u); navigate("/projects"); }} />;
   if (pathname === "/" || pathname === "/projects")
     return <ProjectSelector user={authUser} onSelect={handleProjectSelect} onLogout={handleLogout} />;
+  if (pathname.startsWith("/projects/mines4")) {
+    if (!selectedMine4Id)
+      return <Mines4Landing user={authUser} onSelectMine={setSelectedMine4Id} onBack={() => navigate("/projects")} onLogout={handleLogout} />;
+    return <MinesApp4 user={authUser} initialMineId={selectedMine4Id} onBack={() => setSelectedMine4Id(null)} onLogout={handleLogout} />;
+  }
   if (pathname.startsWith("/projects/investmentmodeling")) {
     if (location.state?.classic)
       return <MinesApp user={authUser} onBack={() => navigate("/projects")} onLogout={handleLogout} />;

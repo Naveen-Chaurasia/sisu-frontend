@@ -9,6 +9,8 @@ const MINE_IMAGES = [
   "https://media.news.climate.columbia.edu/wp-content/uploads/2023/04/Mountain_Pass_2-Rare_Earth_Mine__Processing_Facility.jpeg",
 ];
 
+const SHUFFLED_IMAGES = [...MINE_IMAGES].sort(() => Math.random() - 0.5);
+
 function IconMine() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
@@ -114,7 +116,7 @@ export default function InvestmentLanding({ user, onSelectMine, onBack, onLogout
                     key={mine.id}
                     mine={mine}
                     color={color}
-                    image={MINE_IMAGES[i % MINE_IMAGES.length]}
+                    image={SHUFFLED_IMAGES[i % SHUFFLED_IMAGES.length]}
                     onClick={() => onSelectMine(mine.id)}
                   />
                 );
@@ -156,12 +158,24 @@ function MineCard({ mine, color, image, onClick }) {
     >
       {/* Mine image */}
       {image && (
-        <div style={{ width: "100%", height: 140, overflow: "hidden", flexShrink: 0 }}>
+        <div style={{ width: "100%", height: 140, overflow: "hidden", flexShrink: 0, position: "relative" }}>
           <img
             src={image}
             alt={mine.mine_name}
             style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.3s", transform: hovered ? "scale(1.05)" : "scale(1)" }}
           />
+          {mine.status && (
+            <span style={{
+              position: "absolute", top: 10, right: 10,
+              fontSize: 10, fontWeight: 700, color: "#fff",
+              background: { Active: "#10b981", Development: "#3b82f6", Exploration: "#f59e0b", Closed: "#ef4444" }[mine.status] || "#94a3b8",
+              borderRadius: 20, padding: "3px 10px",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+              whiteSpace: "nowrap",
+            }}>
+              {mine.status}
+            </span>
+          )}
         </div>
       )}
 

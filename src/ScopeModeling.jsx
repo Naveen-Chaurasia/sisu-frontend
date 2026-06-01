@@ -6,7 +6,7 @@ import {
   PieChart, Pie, LineChart, Line, LabelList, ReferenceLine,
 } from "recharts";
 
-const G = "radial-gradient(circle at 17.9167% 91.6667%, rgb(30, 112, 147) 0%, 17.5%, rgb(26, 101, 133) 100%)";
+const G = "linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%)";
 
 // ── Scope metadata ────────────────────────────────────────────────────────────
 const SCOPES = [
@@ -1214,8 +1214,8 @@ export default function ScopeModeling({ user, onBack, onLogout }) {
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", gap: 16, marginBottom: 16 }}>
                         <img src="/Sustain360 - Dark Blue.png" alt="Sustain360" style={{ height: 52, objectFit: "contain", flexShrink: 0 }} />
                         <div style={{ textAlign: "left" }}>
-                          <div style={{ fontSize: 22, fontWeight: 800, color: "#1e7093" }}>
-                            {region === "costa_rica" ? "Costa Rica" : "Mexico"} <span style={{ fontSize: 14, fontWeight: 400, color: "#1e7093" }}>—</span> National Decarbonization Impact Report {activeView === "scope" ? "by Scope" : "by Stages"}
+                          <div style={{ fontSize: 22, fontWeight: 800, color: "#0f2d4a" }}>
+                            {region === "costa_rica" ? "Costa Rica" : "Mexico"} <span style={{ fontSize: 14, fontWeight: 400, color: "#0f2d4a" }}>—</span> National Decarbonization Impact Report {activeView === "scope" ? "by Scope" : "by Stages"}
                           </div>
                           <div style={{ fontSize: 15, fontWeight: 600, color: "#0f172a", marginTop: 4 }}>({simResult.policy_name})</div>
                         </div>

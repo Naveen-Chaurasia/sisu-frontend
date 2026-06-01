@@ -383,15 +383,10 @@ export default function MineProfile2({ mineId, onCreated }) {
   const selMet   = selScen?.metrics || {};
   const fm       = mine?.financial_model || {};
 
-  // Sim overlay: when showSim is active use in-memory calculated data
-  const activeDcf      = (showSim && simDcf[selScenId]) ? simDcf[selScenId] : dcf;
-  const activeMet      = (showSim && simDcf[selScenId]?.metrics) ? simDcf[selScenId].metrics : selMet;
-  const activeAllDcf   = (showSim && Object.keys(simDcf).length > 0)
-    ? flatScens(mine)
-        .filter(s => s.scenario === "Base" || s.scenario === "Single")
-        .map(s => simDcf[s.id] ? { years: simDcf[s.id].years, scenario: { commodity: s.commodity } } : null)
-        .filter(Boolean)
-    : allDcf;
+  // Sim overlay: DCF table + metrics use in-memory data when showSim is active.
+  // Revenue/production charts always use real ingested allDcf (never sim data).
+  const activeDcf = (showSim && simDcf[selScenId]) ? simDcf[selScenId] : dcf;
+  const activeMet = (showSim && simDcf[selScenId]?.metrics) ? simDcf[selScenId].metrics : selMet;
 
   const years      = activeDcf?.years || [];
   const prodYears  = years.filter(r => (r.production || 0) > 0);
@@ -420,12 +415,12 @@ export default function MineProfile2({ mineId, onCreated }) {
     FCF:        r.free_cash_flow  != null ? +(r.free_cash_flow / 1e6).toFixed(2) : null,
   }));
 
-  const revenueByMineral = activeAllDcf.map(d => ({
+  const revenueByMineral = allDcf.map(d => ({
     commodity: d.scenario?.commodity || "—",
     revenue:   +((d.years || []).reduce((s, r) => s + (r.gross_revenue || 0), 0) / 1e6).toFixed(1),
   })).filter(d => d.revenue > 0);
 
-  const productionByMineral = activeAllDcf.map(d => ({
+  const productionByMineral = allDcf.map(d => ({
     commodity:  d.scenario?.commodity || "—",
     production: Math.round((d.years || []).reduce((s, r) => s + (r.production || 0), 0)),
   })).filter(d => d.production > 0);
@@ -523,13 +518,13 @@ export default function MineProfile2({ mineId, onCreated }) {
                 {calcLoading ? "Calculating…" : "Run DCF"}
               </button>
             )}
-            {(dirty || isNew) && (
+            {isNew && (
               <button onClick={handleSave} disabled={saving} style={{
                 background: "#10b981", color: "#fff", border: "none", borderRadius: 8,
                 fontSize: 13, fontWeight: 700, padding: "8px 20px", cursor: saving ? "not-allowed" : "pointer",
                 fontFamily: "inherit", boxShadow: "0 2px 8px rgba(16,185,129,0.3)",
               }}>
-                {saving ? "Saving…" : isNew ? "Create Mine" : "Save Changes"}
+                {saving ? "Saving…" : "Create Mine"}
               </button>
             )}
           </div>

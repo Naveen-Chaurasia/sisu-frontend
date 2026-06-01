@@ -1011,9 +1011,9 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
               <img src="/Sustain360 - Dark Blue.png" alt="Sustain360" style={{ height: 40, objectFit: "contain" }} />
             </div>
             <div style={{ flex: 1, textAlign: "center" }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "#1e7093", letterSpacing: -0.3, whiteSpace: "nowrap" }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "#0f2d4a", letterSpacing: -0.3, whiteSpace: "nowrap" }}>
                 {region === "costa_rica" ? "Costa Rica" : "Mexico"}
-                <span style={{ fontWeight: 400, color: "#1e7093", margin: "0 10px", fontSize: 14 }}>—</span>
+                <span style={{ fontWeight: 400, color: "#0f2d4a", margin: "0 10px", fontSize: 14 }}>—</span>
                 National Emission Report
               </div>
               {/* emission_type kept as data attr for reference: data-emission-type */}
