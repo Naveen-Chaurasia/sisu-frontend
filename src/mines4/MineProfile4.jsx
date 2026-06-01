@@ -6,8 +6,8 @@ import {
 import { THEME, CHART_COLORS, SCENARIO_COLORS, PROVINCES, MINE_TYPES, STATUSES,
   RISK_LEVELS, PROB_OPTS, INTENSITY, RISK_TYPES, DURATIONS, COMMODITIES, PRICE_UNITS } from "./constants4";
 import { fetchMine, fetchDCF, updateMine, createMine, addCommodity,
-  deleteCommodity, updateScenario, calculateMine, invalidateCache,
-  deleteScenario, deleteMine } from "./api4";
+  deleteCommodity, updateScenario, calculateMine, calculateScenario,
+  invalidateCache, deleteScenario, deleteMine } from "./api4";
 
 const nc    = (v, d = 1) => v == null ? "—" : Number(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
 const fmtM  = v => v == null ? "—" : `${v < 0 ? "-$" : "$"}${nc(Math.abs(v), 2)}M`;
@@ -450,7 +450,15 @@ export default function MineProfile4({ mineId, onCreated, onReload, onNavigate, 
     if (!mineId) return;
     setLoading(true);
     fetchMine(mineId)
-      .then(d => {
+      .then(async d => {
+        // Recalculate metrics for all scenarios to avoid stale cached values
+        const scenRefs = (d.commodities || []).flatMap(c => c.scenarios || []);
+        await Promise.all(scenRefs.map(async s => {
+          try {
+            const res = await calculateScenario(mineId, s.id);
+            if (res?.metrics) s.metrics = res.metrics;
+          } catch { /* keep existing metrics on error */ }
+        }));
         setMine(d);
         setEd({ ...d, risk_factors: d.risk_factors || [], environmental_impacts: d.environmental_impacts || [] });
         setDirty(false);
