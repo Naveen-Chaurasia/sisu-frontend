@@ -12,9 +12,10 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       historyApiFallback: true,
       proxy: {
-        "/api":   { target: BACKEND,    changeOrigin: true },
-        "/v2":    { target: BACKEND_V2, changeOrigin: true },
-        "/mines": { target: BACKEND,    changeOrigin: true },
+        "/api":    { target: BACKEND,    changeOrigin: true },
+        "/v2":     { target: BACKEND_V2, changeOrigin: true },
+        "/mines4": { target: BACKEND,    changeOrigin: true },
+        "/mines":  { target: BACKEND,    changeOrigin: true },
       },
     },
   };
