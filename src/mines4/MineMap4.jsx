@@ -462,8 +462,29 @@ function RiskModal({ mine, onClose }) {
   const rf  = mine.risk_factors          || [];
   const ei  = mine.environmental_impacts || [];
 
-  const [rfSort, setRfSort] = useState({ key: "risk_level", dir: "asc" });
-  const [eiSort, setEiSort] = useState({ key: "risk_level", dir: "asc" });
+  const [rfSort,    setRfSort]    = useState({ key: "risk_level", dir: "asc" });
+  const [eiSort,    setEiSort]    = useState({ key: "risk_level", dir: "asc" });
+  const [expanded,  setExpanded]  = useState(false);
+  const [size,      setSize]      = useState({ w: 920, h: null }); // null = use maxHeight
+  const dragRef = useRef(null);
+
+  const startResize = (e) => {
+    e.preventDefault();
+    const startX = e.clientX, startY = e.clientY;
+    const startW = dragRef.current.offsetWidth;
+    const startH = dragRef.current.offsetHeight;
+    const onMove = (ev) => {
+      const newW = Math.max(600, startW + (ev.clientX - startX));
+      const newH = Math.max(300, startH + (ev.clientY - startY));
+      setSize({ w: newW, h: newH });
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
 
   const toggleSort = (current, setCurrent) => key => {
     setCurrent(s => s.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
@@ -482,10 +503,18 @@ function RiskModal({ mine, onClose }) {
 
   return (
     <div
-      style={{ position: "fixed", top: 0, right: 0, bottom: 0, left: 220, zIndex: 9999, background: "rgba(10,20,35,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 28 }}
+      style={{ position: "fixed", top: 0, right: 0, bottom: 0, left: 220, zIndex: 9999, background: "rgba(10,20,35,0.55)", display: "flex", alignItems: expanded ? "stretch" : "flex-start", justifyContent: "center", padding: expanded ? 0 : 28, paddingTop: expanded ? 0 : 80 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div style={{ background: "#f8fafc", borderRadius: 18, width: "100%", maxWidth: 920, maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 32px 100px rgba(0,0,0,0.45)" }}>
+      <div ref={dragRef} style={{
+        background: "#f8fafc", borderRadius: expanded ? 0 : 18,
+        width: expanded ? "100%" : size.w, maxWidth: expanded ? "100%" : "95vw",
+        height: expanded ? "100%" : (size.h ? size.h : undefined),
+        maxHeight: expanded ? "100%" : (size.h ? undefined : "70vh"),
+        overflow: "hidden", display: "flex", flexDirection: "column",
+        boxShadow: expanded ? "none" : "0 32px 100px rgba(0,0,0,0.45)",
+        position: "relative", flexShrink: 0,
+      }}>
 
         {/* Header */}
         <div style={{ background: "linear-gradient(135deg,#0f2d4a 0%,#1e7093 100%)", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
@@ -493,72 +522,35 @@ function RiskModal({ mine, onClose }) {
             <div style={{ fontSize: 17, fontWeight: 800, color: "#fff" }}>{mine.mine_name}</div>
             <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>Risk Factors &amp; Environmental Impact</div>
           </div>
-          <button onClick={onClose} style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: 8, width: 34, height: 34, fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 300 }}>×</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* Expand / collapse toggle */}
+            <button onClick={() => setExpanded(v => !v)} title={expanded ? "Restore" : "Expand"}
+              style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: 8, width: 34, height: 34, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {expanded ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/>
+                  <line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/>
+                </svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              )}
+            </button>
+            <button onClick={onClose} style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: 8, width: 34, height: 34, fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 300 }}>×</button>
+          </div>
         </div>
 
-        <div style={{ overflow: "auto", flex: 1 }}>
+        <style>{`
+          .risk-modal-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+          .risk-modal-scroll::-webkit-scrollbar-track { background: transparent; }
+          .risk-modal-scroll::-webkit-scrollbar-thumb { background: linear-gradient(180deg,#1e7093,#0f2d4a); border-radius: 10px; }
+          .risk-modal-scroll::-webkit-scrollbar-thumb:hover { background: #2a9bbf; }
+        `}</style>
+        <div className="risk-modal-scroll" style={{ overflow: "auto", flex: 1 }}>
 
-          {/* ── Charts row ─────────────────────────────────────────────────── */}
-          {(rf.length > 0 || ei.length > 0) && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, padding: "20px 24px 4px" }}>
-
-              {/* Chart 1: Risk factors by type (donut) */}
-              {rfByType.length > 0 && (
-                <div style={{ background: "#fff", borderRadius: 12, padding: "14px 16px", border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#475569", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Risk by Type</div>
-                  <ResponsiveContainer width="100%" height={170}>
-                    <PieChart>
-                      <Pie data={rfByType} cx="50%" cy="50%" innerRadius="40%" outerRadius="68%" dataKey="value" paddingAngle={2}
-                        label={({ name, value }) => `${value}`} labelLine={false}>
-                        {rfByType.map((_, i) => <Cell key={i} fill={TYPE_COLORS[i % TYPE_COLORS.length]} />)}
-                      </Pie>
-                      <Tooltip formatter={(v, n) => [v, n]} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                      <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize: 10 }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-
-              {/* Chart 2: Risk level distribution grouped bar */}
-              {rfByLevel.length > 0 && (
-                <div style={{ background: "#fff", borderRadius: 12, padding: "14px 16px", border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#475569", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Risk Level Distribution</div>
-                  <ResponsiveContainer width="100%" height={170}>
-                    <BarChart data={rfByLevel} margin={{ top: 4, right: 4, bottom: 12, left: -16 }} barCategoryGap="28%">
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                      <XAxis dataKey="name" tick={{ fontSize: 9 }} />
-                      <YAxis tick={{ fontSize: 9 }} allowDecimals={false} />
-                      <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                      <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize: 10 }} />
-                      <Bar dataKey="Risk Factors" fill="#1e7093" radius={[3,3,0,0]} maxBarSize={20} />
-                      <Bar dataKey="Env Impacts"  fill="#10b981" radius={[3,3,0,0]} maxBarSize={20} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-
-              {/* Chart 3: Env impact intensity */}
-              {eiByInt.length > 0 && (
-                <div style={{ background: "#fff", borderRadius: 12, padding: "14px 16px", border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#475569", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Env Impact Intensity</div>
-                  <ResponsiveContainer width="100%" height={170}>
-                    <BarChart data={eiByInt} layout="vertical" margin={{ top: 4, right: 20, bottom: 4, left: 0 }} barCategoryGap="28%">
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                      <XAxis type="number" tick={{ fontSize: 9 }} allowDecimals={false} />
-                      <YAxis type="category" dataKey="name" width={56} tick={{ fontSize: 9 }} />
-                      <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                      <Bar dataKey="count" radius={[0,3,3,0]} maxBarSize={18}>
-                        {eiByInt.map((d, i) => {
-                          const c = d.name === "High" || d.name === "Severe" ? "#ef4444" : d.name === "Medium" || d.name === "Moderate" ? "#f59e0b" : "#10b981";
-                          return <Cell key={i} fill={c} />;
-                        })}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Charts row removed */}
 
           <div style={{ padding: "16px 24px 24px" }}>
 
@@ -625,6 +617,20 @@ function RiskModal({ mine, onClose }) {
             </div>
           </div>
         </div>
+
+        {/* Drag-resize handle — bottom-right corner */}
+        {!expanded && (
+          <div onMouseDown={startResize} style={{
+            position: "absolute", bottom: 0, right: 0, width: 20, height: 20, cursor: "se-resize",
+            display: "flex", alignItems: "flex-end", justifyContent: "flex-end", padding: 4,
+          }}>
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <line x1="10" y1="3" x2="3" y2="10" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1="10" y1="6" x2="6" y2="10" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round"/>
+              <line x1="10" y1="9" x2="9" y2="10" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
+        )}
       </div>
     </div>
   );

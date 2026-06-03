@@ -222,7 +222,7 @@ export default function MinesApp4({ user, onBack, onLogout, initialMineId }) {
               <div style={{ position: "relative" }}>
                 <select
                   value={selMineId || ""}
-                  onChange={e => { if (e.target.value) { setSelMineId(e.target.value); setScreen("profile"); } }}
+                  onChange={e => { if (e.target.value) { setSelMineId(e.target.value); } }}
                   style={{
                     background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.25)",
                     borderRadius: 7, color: "#fff", padding: "5px 28px 5px 10px",

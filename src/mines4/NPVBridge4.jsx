@@ -161,19 +161,25 @@ function SummaryCards({ agg }) {
 
 function BreakdownTable({ steps, gr }) {
   return (
-    <div style={{ background: THEME.card, borderRadius: 8, overflow: "hidden",
-      border: `1px solid ${THEME.border}`, boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
-      <div style={{ padding: "13px 18px", borderBottom: "1px solid #f1f5f9",
-        fontSize: 11, fontWeight: 800, color: THEME.primaryDark, letterSpacing: 0.4 }}>
-        Value Bridge Breakdown — Lifetime of Mine
+    <div>
+      {/* Header — outside the bordered table */}
+      <div style={{ marginBottom: 10 }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: THEME.primaryDark }}>
+          Value Bridge Breakdown — Lifetime of Mine
+        </span>
       </div>
+
+      <div style={{
+        background: "linear-gradient(#fff,#fff) padding-box, linear-gradient(135deg,#0f2d4a,#1e7093,#67c5e0) border-box",
+        border: "2px solid transparent", borderRadius: 8, overflow: "hidden",
+        boxShadow: "0 2px 12px rgba(30,112,147,0.12)" }}>
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
           <thead>
-            <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+            <tr style={{ background: "linear-gradient(135deg, #0f2d4a 0%, #1e7093 60%, #2a9bbf 100%)", borderBottom: "none" }}>
               {["Component", "Amount", "Running Total", "% of Gross Revenue"].map(h => (
-                <th key={h} style={{ padding: "9px 16px", fontSize: 10, fontWeight: 700,
-                  color: THEME.muted, letterSpacing: 1, textTransform: "uppercase",
+                <th key={h} style={{ padding: "10px 16px", fontSize: 10, fontWeight: 700,
+                  color: "rgba(255,255,255,0.85)", letterSpacing: 1, textTransform: "uppercase",
                   textAlign: h === "Component" ? "left" : "right" }}>{h}</th>
               ))}
             </tr>
@@ -203,6 +209,7 @@ function BreakdownTable({ steps, gr }) {
           </tbody>
         </table>
       </div>
+    </div>
     </div>
   );
 }

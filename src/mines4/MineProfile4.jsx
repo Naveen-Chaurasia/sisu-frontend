@@ -644,6 +644,7 @@ export default function MineProfile4({ mineId, onCreated, onReload, onNavigate, 
       for (const r of data.results || [])
         map[r.scenario_id] = { years: r.years, metrics: r.metrics };
       setSimDcf(map);
+      onNavigate?.("financial");
     } catch (e) { setCalcErr(e.message); }
     finally { setCalcLoading(false); }
   };

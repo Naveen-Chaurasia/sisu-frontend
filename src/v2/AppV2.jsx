@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import EmissionsTabV2  from "./EmissionsTabV2";
 import SimulationTabV2 from "./SimulationTabV2";
 import NetZeroPlanV2   from "./NetZeroPlanV2";
+import NationalEmissionIQ from "../NationalEmissionIQ";
 import { fetchSectors, fetchSectorPolicies, fetchSectorBaseline } from "./api";
 import {
   IconBarChart, IconFlask, IconTarget,
@@ -12,9 +13,10 @@ import {
 const G = "linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%)";
 
 const TABS = [
-  { id: "emissions",  label: "National Emissions", Icon: IconBarChart },
-  { id: "simulation", label: "Policy Simulation",  Icon: IconFlask    },
-  { id: "netzero",    label: "Net Zero Plan",       Icon: IconTarget   },
+  { id: "emissions",  label: "National Emissions",    Icon: IconBarChart },
+  { id: "simulation", label: "Policy Simulation",     Icon: IconFlask    },
+  { id: "netzero",    label: "Net Zero Plan",          Icon: IconTarget   },
+  { id: "ardhi",      label: "Ardhi Intelligence",     Icon: IconInfo     },
 ];
 
 const REGIONS = [
@@ -38,11 +40,13 @@ const SECTOR_COLORS = {
 };
 const SECTOR_LABELS = {
   transport:   "Transport",
-  agriculture: "Agriculture",
-  energy:      "Energy",
+  agriculture: "Agriculture (proxy)",
+  energy:      "Energy (proxy)",
   waste:       "Waste",
   industrial:  "Industrial",
 };
+
+const PROXY_SECTORS = new Set(["energy", "agriculture"]);
 // Sector SVG icons imported from Icons.jsx via SECTOR_ICON_MAP
 const ALL_SECTORS = Object.keys(SECTOR_COLORS);
 
@@ -182,7 +186,15 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "costa_r
   const [emSelIdx,  setEmSelIdx]  = useState(0);
 
   useEffect(() => {
-    fetchSectors().then(d => setEmSectors(d.sectors || [])).catch(() => {});
+    fetchSectors().then(d => {
+      const sectors = (d.sectors || [])
+        .filter(s => s.sector !== "cross_sector")
+        .map(s => ({
+          ...s,
+          label: PROXY_SECTORS.has(s.sector) ? `${s.label} (proxy)` : s.label,
+        }));
+      setEmSectors(sectors);
+    }).catch(() => {});
   }, []);
 
   // Simulation tab — sector / policy lifted here so they sit in the top bar
@@ -199,7 +211,15 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "costa_r
   const [nzSelIdx, setNzSelIdx] = useState(0);
 
   useEffect(() => {
-    fetchSectors().then(d => setSimSectors(d.sectors || [])).catch(() => {});
+    fetchSectors().then(d => {
+      const sectors = (d.sectors || [])
+        .filter(s => s.sector !== "cross_sector")
+        .map(s => ({
+          ...s,
+          label: PROXY_SECTORS.has(s.sector) ? `${s.label} (proxy)` : s.label,
+        }));
+      setSimSectors(sectors);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -288,7 +308,7 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "costa_r
       <div style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
 
         {/* ── Controls row: Region | GHG | Sectors (net zero only) ── */}
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "nowrap", overflowX: "auto", marginLeft: pageTab === "emissions" ? 72 : 0 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: (pageTab === "netzero" || pageTab === "simulation") ? "wrap" : "nowrap", overflowX: (pageTab === "netzero" || pageTab === "simulation") ? "visible" : "auto", width: (pageTab === "netzero" || pageTab === "simulation") ? "calc(100vw - 60px)" : undefined, marginLeft: pageTab === "emissions" ? 72 : 0 }}>
 
           {/* REGION card */}
           <div style={cardStyle}>
@@ -320,8 +340,8 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "costa_r
             </div>
           </div>
 
-          {/* GREENHOUSE GAS card */}
-          <div style={cardStyle}>
+          {/* GREENHOUSE GAS card — hidden on Ardhi Intelligence tab */}
+          {pageTab !== "ardhi" && <div style={cardStyle}>
             <label style={lbl}>Greenhouse Gas</label>
             <div style={{ display: "flex", gap: 8 }}>
               {GASES.map(g => {
@@ -341,7 +361,7 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "costa_r
                 );
               })}
             </div>
-          </div>
+          </div>}
 
           {/* SECTOR + TIMELINE — only on Emissions tab */}
           {pageTab === "emissions" && (
@@ -516,6 +536,19 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "costa_r
         )}
 
       </div>
+
+      {/* Ardhi Intelligence — full-bleed outside the padded content wrapper */}
+      {pageTab === "ardhi" && (
+        <div style={{ marginTop: -24 }}>
+          <NationalEmissionIQ
+            country={region}
+            user={user}
+            onBack={() => setPageTab("netzero")}
+            onLogout={onLogout}
+            embedded
+          />
+        </div>
+      )}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

@@ -820,7 +820,7 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
   const [data,          setData]          = useState(null);
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState(null);
-  const [ghgExpanded, setGhgExpanded] = useState(false);
+  const [ghgExpanded, setGhgExpanded] = useState(true);
   const [donutActiveIdx, setDonutActiveIdx] = useState(null);
   const [viewMode, setViewMode] = useState("scope");
   const reportRef = useRef(null);
@@ -1022,7 +1022,18 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
                 {(() => { const SI = SECTOR_ICON_MAP[sector]; return SI ? <SI size={13} style={{ verticalAlign: "middle", marginRight: 4 }} /> : null; })()}{sectorMeta.label}
               </div>
             </div>
-            <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
+            <div style={{ flex: 1, display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8 }}>
+              {/* Data source dot */}
+              {(() => {
+                const isReal = data.emission_type === "exact" || data.emission_type === "sisepuede_real";
+                return (
+                  <div title={isReal ? "SISEPUEDE Real Data" : "Proxy Estimate"} style={{
+                    width: 10, height: 10, borderRadius: "50%", cursor: "default",
+                    background: isReal ? "#059669" : "#f59e0b",
+                    boxShadow: `0 0 0 3px ${isReal ? "rgba(5,150,105,0.2)" : "rgba(245,158,11,0.2)"}`,
+                  }} />
+                );
+              })()}
               <button onClick={exportPDF} style={{
                 display: "flex", alignItems: "center", gap: 6,
                 background: "rgba(30,112,147,0.1)", color: "#1e7093",
@@ -1037,6 +1048,22 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
               </button>
             </div>
           </div>
+
+          {/* Transport proxy notice */}
+          {sector === "transport" && data?.emission_type !== "sisepuede_real" && (
+            <div style={{
+              display: "flex", alignItems: "flex-start", gap: 8,
+              background: "rgba(245,158,11,0.07)", border: "1px solid rgba(245,158,11,0.3)",
+              borderRadius: 8, padding: "9px 14px", marginTop: 4,
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span style={{ fontSize: 11.5, color: "#92400e", lineHeight: 1.6 }}>
+                <strong>Proxy model:</strong> Transport values are based on a normalised activity proxy (100 units per mode). Relative trends and policy comparisons are valid, but absolute emission totals are not real-world figures.
+              </span>
+            </div>
+          )}
 
           {/* Scope / Stage toggle */}
           {hasScopes && (

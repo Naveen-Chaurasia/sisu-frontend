@@ -21,8 +21,8 @@ const SECTOR_COLORS = {
 };
 const SECTOR_LABELS = {
   transport:   "Transport",
-  agriculture: "Agriculture",
-  energy:      "Energy",
+  agriculture: "Agriculture (proxy)",
+  energy:      "Energy (proxy)",
   waste:       "Waste",
   industrial:  "Industrial",
 };
@@ -225,7 +225,7 @@ export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onTog
             display: "flex", alignItems: "center", gap: 8,
             boxShadow: loading ? "none" : "0 2px 8px rgba(30,112,147,0.3)",
           }}>
-          {loading ? <><Spinner size={14} /> Computing…</> : <><IconPlay size={13} /> Run Net Zero Batch</>}
+          {loading ? <><Spinner size={14} /> Computing…</> : <><IconPlay size={13} /> Run Net Zero Plan</>}
         </button>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>Cross-Sector Net Zero Plan</div>
@@ -399,7 +399,7 @@ export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onTog
           padding: "14px 20px", display: "flex", alignItems: "center", gap: 14, color: "#0369a1" }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 2 }}>
-              Click "Run Net Zero Batch" to simulate all policies across all sectors
+              Click "Run Net Zero Plan" to simulate all policies across all sectors
             </div>
             <div style={{ fontSize: 12, color: "#0284c7" }}>
               Computes the combined abatement potential for {region === "costa_rica" ? "Costa Rica" : "Mexico"}'s net zero pathway.

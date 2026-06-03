@@ -67,7 +67,7 @@ export default function Mines4Landing({ user, onSelectMine, onBack, onLogout }) 
     <div style={{ minHeight: "100vh", fontFamily: "Inter, sans-serif" }}>
 
       {/* Navbar */}
-      <div style={{ background: G, padding: "0 32px", display: "flex", alignItems: "center", height: 58, boxShadow: "0 2px 12px rgba(26,101,133,0.3)" }}>
+      <div style={{ background: G, padding: "0 32px", display: "flex", alignItems: "center", height: 58, boxShadow: "0 2px 12px rgba(26,101,133,0.3)", position: "sticky", top: 0, zIndex: 100 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <img
             src="/Sustain360 - Dark Blue.png"
@@ -106,7 +106,7 @@ export default function Mines4Landing({ user, onSelectMine, onBack, onLogout }) 
       {/* Hero */}
       <div style={{ background: "#ffffff", minHeight: "calc(100vh - 58px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 32px", position: "relative", overflow: "hidden" }}>
 
-        <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 1000 }}>
+        <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 1320 }}>
 
           {/* Title */}
           <div style={{ textAlign: "center", marginBottom: 44 }}>
@@ -125,7 +125,7 @@ export default function Mines4Landing({ user, onSelectMine, onBack, onLogout }) 
           {error   && <div style={{ color: "#ef4444", fontSize: 13, textAlign: "center" }}>{error}</div>}
 
           {!loading && !error && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 20, maxWidth: 1000, margin: "0 auto" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20, maxWidth: 1320, margin: "0 auto" }}>
               {mines.map((mine, i) => (
                 <MineCard
                   key={mine.id} mine={mine} image={MINE_IMAGES[i % MINE_IMAGES.length]}

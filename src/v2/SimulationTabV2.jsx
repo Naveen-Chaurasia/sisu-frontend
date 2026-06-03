@@ -13,6 +13,23 @@ const PALETTE = [
   "#06b6d4","#f97316","#84cc16","#ec4899","#78716c",
 ];
 
+// Dot that renders every 5 years with a value label above
+const MilestoneDot = (color, dataKey, above = true) => (props) => {
+  const { cx, cy, payload } = props;
+  if (!payload || payload.year % 5 !== 0) return null;
+  const val = payload[dataKey];
+  if (val == null || isNaN(val)) return null;
+  const labelY = above ? cy - 10 : cy + 16;
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={4} fill={color} stroke="#fff" strokeWidth={1.5} />
+      <text x={cx} y={labelY} textAnchor="middle" fontSize={8.5} fill={color} fontWeight={700}>
+        {fmt(val, 1)}
+      </text>
+    </g>
+  );
+};
+
 function fmt(n, dp = 1) {
   if (n === undefined || n === null || isNaN(n)) return "—";
   const abs = Math.abs(n);
@@ -343,9 +360,11 @@ export default function SimulationTabV2({ region, gas, unit, sector, policyId, p
                   <Label value={selYear} position="insideTopRight" fontSize={10} fill="#64748b" offset={4} />
                 </ReferenceLine>
                 <Area type="monotone" dataKey="Baseline" stroke="#94a3b8" strokeWidth={2}
-                  strokeDasharray="6 3" fill="url(#baseGrad)" dot={false} />
+                  strokeDasharray="6 3" fill="url(#baseGrad)"
+                  dot={MilestoneDot("#94a3b8", "Baseline", false)} activeDot={{ r: 5 }} />
                 <Area type="monotone" dataKey="Policy" stroke="#1e7093" strokeWidth={2.5}
-                  fill="url(#polGrad)" dot={false} />
+                  fill="url(#polGrad)"
+                  dot={MilestoneDot("#1e7093", "Policy", true)} activeDot={{ r: 5 }} />
               </ComposedChart>
             </ResponsiveContainer>
             <div style={{ display: "flex", gap: 20, justifyContent: "center", marginTop: 10 }}>
@@ -398,7 +417,8 @@ export default function SimulationTabV2({ region, gas, unit, sector, policyId, p
                   <Label value={selYear} position="insideTopLeft" fontSize={10} fill="#64748b" offset={4} />
                 </ReferenceLine>
                 <Area type="monotone" dataKey="abatement" stroke="#059669" strokeWidth={2.5}
-                  fill="url(#agrad)" name="Abatement" dot={false} />
+                  fill="url(#agrad)" name="Abatement"
+                  dot={MilestoneDot("#059669", "abatement", true)} activeDot={{ r: 5 }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>

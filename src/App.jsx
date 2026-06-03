@@ -7,6 +7,7 @@ import AppV2 from "./v2/AppV2";
 import MinesApp4 from "./mines4/MinesApp4";
 import Mines4Landing from "./mines4/Mines4Landing";
 import EmissionLanding from "./EmissionLanding";
+import NationalEmissionIQ from "./NationalEmissionIQ";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const G = "linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%)";
@@ -259,6 +260,7 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
       best: "AI-powered exploration",
       cta: "Describe & Simulate",
     },
+    // { id: "emission_iq", hidden: true },
     {
       id: "emissions_v2",
       icon: (
@@ -312,10 +314,13 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }}>
             {MODES.map((m) => {
               const isEmissions = m.id === "emissions_v2";
+              const isIQ = m.id === "emission_iq";
               const cardStyle = {
-                background: "linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%)",
+                background: isIQ
+                  ? "linear-gradient(135deg, #1a0e00 0%, #2d1a00 40%, #4a2f00 75%, #6b4400 100%)"
+                  : "linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%)",
                 border: "none",
-                borderLeft: "5px solid #67c5e0",
+                borderLeft: isIQ ? "5px solid #d97706" : "5px solid #67c5e0",
                 boxShadow: "0 4px 24px rgba(15,45,74,0.25), 0 1px 4px rgba(0,0,0,0.12)",
                 borderRadius: 8,
                 padding: "26px 24px 22px",
@@ -328,14 +333,17 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
                 transition: "all 0.2s",
               };
 
+              const iconColor  = isIQ ? "#fbbf24" : "#67c5e0";
+              const iconBg     = isIQ ? "rgba(251,191,36,0.18)"  : "rgba(103,197,224,0.18)";
+              const iconBorder = isIQ ? "rgba(251,191,36,0.35)"  : "rgba(103,197,224,0.35)";
+
               const cardInner = (
                 <>
                   <div style={{
                     width: 44, height: 44, borderRadius: 11,
-                    background: "rgba(103,197,224,0.18)",
-                    border: "1px solid rgba(103,197,224,0.35)",
+                    background: iconBg, border: `1px solid ${iconBorder}`,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "#67c5e0", flexShrink: 0,
+                    color: iconColor, flexShrink: 0,
                   }}>
                     {m.icon}
                   </div>
@@ -952,6 +960,8 @@ export default function App() {
       return <ScopeModeling user={authUser} onBack={() => setMode(null)} onLogout={handleLogout} />;
     if (mode === "emissions_v2")
       return <AppV2 user={authUser} initialRegion={selectedCountry} onBack={() => setMode(null)} onLogout={handleLogout} />;
+    if (mode === "emission_iq")
+      return <NationalEmissionIQ user={authUser} country={selectedCountry} onBack={() => setMode(null)} onLogout={handleLogout} />;
   }
 
   if (!pathname.startsWith("/projects/emissionmodeling")) return <Navigate to="/projects" />;
