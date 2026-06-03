@@ -1,20 +1,27 @@
 {
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/:path*",
-      "destination": "https://web-production-c3591.up.railway.app/api/:path*"
+      "src": "/api/(.*)",
+      "dest": "https://web-production-c3591.up.railway.app/api/$1"
     },
     {
-      "source": "/v2/:path*",
-      "destination": "https://web-production-c3591.up.railway.app/v2/:path*"
+      "src": "/v2/(.*)",
+      "dest": "https://web-production-c3591.up.railway.app/v2/$1"
     },
     {
-      "source": "/mines4/:path*",
-      "destination": "https://web-production-c3591.up.railway.app/mines4/:path*"
+      "src": "/mines4/(.*)",
+      "dest": "https://web-production-c3591.up.railway.app/mines4/$1"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/emission-iq/(.*)",
+      "dest": "https://web-production-c3591.up.railway.app/emission-iq/$1"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
