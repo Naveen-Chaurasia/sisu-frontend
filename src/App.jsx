@@ -9,7 +9,7 @@ import Mines4Landing from "./mines4/Mines4Landing";
 import EmissionLanding from "./EmissionLanding";
 import NationalEmissionIQ from "./NationalEmissionIQ";
 
-// ── Constants ────────────────────────────────────────────────────────────────
+// ?????? Constants ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 const G = "linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%)";
 
 const ALL_GAS_OPTIONS = ["co2", "ch4", "n2o"];
@@ -24,7 +24,7 @@ const GAS_UNITS = {
   n2o: "t N₂O",
 };
 
-// ── Auth ─────────────────────────────────────────────────────────────────────
+// ?????? Auth ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 function Login({ onLogin }) {
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
@@ -187,7 +187,7 @@ function Login({ onLogin }) {
 
           {/* Footer */}
           <div style={{ textAlign: "center", marginTop: 24, fontSize: 11.5, color: "#94a3b8" }}>
-            Powered by <strong>Sustain360.ai</strong> · GHG Protocol aligned · ISO 14083
+            Powered by <strong>Sustain360.ai</strong> � GHG Protocol aligned � ISO 14083
           </div>
         </div>
       </div>
@@ -197,14 +197,14 @@ function Login({ onLogin }) {
         position: "fixed", bottom: 16, right: 20,
         fontSize: 11, color: "#94a3b8",
       }}>
-        © {new Date().getFullYear()} Sustain360.ai · All rights reserved
+        � {new Date().getFullYear()} Sustain360.ai � All rights reserved
       </div>
     </div>
   );
 }
 
-// ── Welcome / Mode selection ─────────────────────────────────────────────────
-const COUNTRY_LABELS = { costa_rica: "Costa Rica", mexico: "Mexico", uganda: "Uganda" };
+// ?????? Welcome / Mode selection ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
+const COUNTRY_LABELS = { costa_rica: "Costa Rica", mexico: "Mexico", ethiopia: "Ethiopia", mexico_llm: "Mexico" };
 
 function Welcome({ user, onSelect, onLogout, onBack, country }) {
   const NAV = (
@@ -216,7 +216,10 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
         <button onClick={onBack} style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, color: "#e0f7fa", fontSize: 12, fontWeight: 600, padding: "5px 14px", cursor: "pointer", fontFamily: "inherit" }}
           onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.22)"}
           onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}
-        >← Projects</button>
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          Projects
+        </button>
       </div>
       {/* Right: user avatar + sign out */}
       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
@@ -280,7 +283,7 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
     <div style={{ minHeight: "100vh", fontFamily: "inherit" }}>
       {NAV}
 
-      {/* ── Hero (full page) ── */}
+      {/* ?????? Hero (full page) ?????? */}
       <div style={{
         background: "#ffffff",
         minHeight: "calc(100vh - 56px)",
@@ -301,7 +304,14 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
         <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 1200 }}>
           <div style={{ marginBottom: 14, textAlign: "center" }}>
             <h1 style={{ fontSize: 40, fontWeight: 900, color: "#0f2d4a", margin: 0, letterSpacing: -0.8, lineHeight: 1.15 }}>
-              {country ? <>{COUNTRY_LABELS[country]} <span style={{ fontSize: 24, fontWeight: 900, color: "#94a3b8" }}>-</span></> : "National"} Emission<br />
+              {country ? (
+                <>
+                  <span style={(country === "mexico_llm" || country === "ethiopia") ? { textDecoration: "underline", textUnderlineOffset: 5 } : {}}>
+                    {COUNTRY_LABELS[country]}
+                  </span>
+                  {" "}<span style={{ fontSize: 24, fontWeight: 900, color: "#94a3b8" }}>-</span>
+                </>
+              ) : "National"} Emission<br />
               <span style={{ color: "#1e7093" }}>Decarbonization Modeling</span>
             </h1>
           </div>
@@ -310,17 +320,21 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
           </p>
 
 
-          {/* ── Cards inside hero ── */}
+          {/* ?????? Cards inside hero ?????? */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }}>
             {MODES.map((m) => {
               const isEmissions = m.id === "emissions_v2";
               const isIQ = m.id === "emission_iq";
+              const isGreyedOut = (m.id === "structured" || m.id === "natural")
+                && (country === "ethiopia" || country === "mexico_llm");
               const cardStyle = {
                 background: isIQ
                   ? "linear-gradient(135deg, #1a0e00 0%, #2d1a00 40%, #4a2f00 75%, #6b4400 100%)"
                   : "linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%)",
                 border: "none",
                 borderLeft: isIQ ? "5px solid #d97706" : "5px solid #67c5e0",
+                filter: isGreyedOut ? "blur(1.5px)" : "none",
+                pointerEvents: isGreyedOut ? "none" : "auto",
                 boxShadow: "0 4px 24px rgba(15,45,74,0.25), 0 1px 4px rgba(0,0,0,0.12)",
                 borderRadius: 8,
                 padding: "26px 24px 22px",
@@ -400,6 +414,44 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
                 );
               }
 
+              if (isGreyedOut) {
+                return (
+                  <div key={m.id} style={{ position: "relative", borderRadius: 8 }}>
+                    {/* blurred card */}
+                    <div style={{ ...cardStyle, cursor: "default" }}>
+                      {cardInner}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#fff" }}>
+                        {m.cta}
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                      </div>
+                    </div>
+                    {/* lock overlay */}
+                    <div style={{
+                      position: "absolute", inset: 0, borderRadius: 8,
+                      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8,
+                      background: "rgba(11,31,53,0.45)", backdropFilter: "blur(1px)",
+                      pointerEvents: "none",
+                    }}>
+                      <div style={{
+                        width: 40, height: 40, borderRadius: "50%",
+                        background: "rgba(255,255,255,0.12)", border: "1.5px solid rgba(255,255,255,0.25)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                          <path d="M7 11V7a5 5 0 0110 0v4"/>
+                        </svg>
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.7)", letterSpacing: 0.4 }}>
+                        Not available for this country
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <button key={m.id} onClick={() => onSelect(m.id)} style={{ ...cardStyle, cursor: "pointer" }}
                   onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 16px 40px rgba(15,45,74,0.35)"; }}
@@ -419,7 +471,7 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
 
           {/* Footer note */}
           <div style={{ marginTop: 36, fontSize: 11.5, color: "rgba(15,45,74,0.4)" }}>
-            Powered by <strong style={{ color: "#1e7093" }}>Sustain360.ai</strong> · GHG Protocol aligned · ISO 14083
+            Powered by <strong style={{ color: "#1e7093" }}>Sustain360.ai</strong> � GHG Protocol aligned � ISO 14083
           </div>
         </div>
       </div>
@@ -427,7 +479,7 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
   );
 }
 
-// ── Project Selector ─────────────────────────────────────────────────────────
+// ?????? Project Selector ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 function ProjectSelector({ user, onSelect, onLogout }) {
   const PROJECTS = [
     {
@@ -694,7 +746,7 @@ const DEFAULT_PARAMS = {
   year: 2035,
 };
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ?????? Helpers ??????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 function formatNumber(n) {
   if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(1) + "M";
   if (Math.abs(n) >= 1e3) return (n / 1e3).toFixed(1) + "K";
@@ -732,10 +784,10 @@ function getAlternatives(p) {
   const yLabel  = altYear < p.year ? "Accelerated" : "Extended";
   const alts = [
     { title: "More Ambitious",     subtitle: `Magnitude ${p.magnitude}% → ${hiMag}%`,     tag: `+${hiMag - p.magnitude}%`,       params: { ...p, magnitude: hiMag } },
-    { title: `${yLabel} Timeline`, subtitle: `Target year ${p.year} → ${altYear}`,         tag: `${p.year}→${altYear}`,           params: { ...p, year: altYear } },
+    { title: `${yLabel} Timeline`, subtitle: `Target year ${p.year} → ${altYear}`,         tag: `${p.year}???${altYear}`,           params: { ...p, year: altYear } },
   ];
   if (p.policyType === "fuel_switch" && p.targetFuel === "fuel_electricity")
-    alts.push({ title: "Hydrogen Pathway", subtitle: "Switch target: Electric → Hydrogen", tag: "H₂ fuel", params: { ...p, targetFuel: "fuel_hydrogen" } });
+    alts.push({ title: "Hydrogen Pathway", subtitle: "Switch target: Electric → Hydrogen", tag: "H??? fuel", params: { ...p, targetFuel: "fuel_hydrogen" } });
   else if (p.policyType === "fuel_switch" && p.targetFuel === "fuel_hydrogen")
     alts.push({ title: "Electric Pathway", subtitle: "Switch target: Hydrogen → Electric", tag: "EV fuel", params: { ...p, targetFuel: "fuel_electricity" } });
   else if (p.policyType === "mode_shift")
@@ -748,7 +800,7 @@ function getAlternatives(p) {
 const RISK_COLOR = { high: "#ef4444", medium: "#f59e0b", low: "#3b82f6" };
 const RISK_BG    = { high: "rgba(239,68,68,0.08)", medium: "rgba(245,158,11,0.08)", low: "rgba(59,130,246,0.08)" };
 
-// ── Markdown renderer ────────────────────────────────────────────────────────
+// ?????? Markdown renderer ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 function parseInline(text) {
   const parts = [];
   const re = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g;
@@ -839,15 +891,15 @@ const spinKeyframes = `@keyframes spin { to { transform: rotate(360deg); } }`;
 const lbl = { fontSize: 10, fontWeight: 700, color: "#1a6585", letterSpacing: 0.9, textTransform: "uppercase", marginBottom: 7 };
 const sel  = { background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, color: "#0f172a", fontSize: 13, padding: "8px 10px", outline: "none", fontFamily: "inherit", width: "100%", cursor: "pointer" };
 
-// ── App ───────────────────────────────────────────────────────────────────────
+// ?????? App ?????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 export default function App() {
   const navigate                        = useNavigate();
   const location                        = useLocation();
   const [authUser, setAuthUser]         = useState(null);
   const [mode, setMode]                 = useState(null);
   const [selectedMine4Id,  setSelectedMine4Id]  = useState(null);
-  const [selectedCountry,  setSelectedCountry]  = useState(null);
-  const [region, setRegion]             = useState("costa_rica");
+  const [selectedCountry,  setSelectedCountry]  = useState("ethiopia");
+  const [region, setRegion]             = useState("ethiopia");
   const [nlText, setNlText]             = useState("");
   const [selectedGoal, setSelectedGoal] = useState(null);
   const [params, setParams]             = useState(DEFAULT_PARAMS);
@@ -970,7 +1022,7 @@ export default function App() {
     <>
       <style>{spinKeyframes}</style>
 
-      {/* ── Policy JSON Modal ── */}
+      {/* ?????? Policy JSON Modal ?????? */}
       {policyJsonOpen && result?.policy_config && (
         <div
           onClick={() => setPolicyJsonOpen(false)}
@@ -1019,7 +1071,7 @@ export default function App() {
                     borderRadius: 7, color: "#94a3b8", fontSize: 13, fontWeight: 600,
                     padding: "5px 11px", cursor: "pointer", fontFamily: "inherit", lineHeight: 1,
                   }}
-                >✕</button>
+                >♻</button>
               </div>
             </div>
             {/* Body */}
@@ -1037,7 +1089,7 @@ export default function App() {
 
       <div style={{ minHeight: "100vh", background: "#f8fafc" }}>
 
-        {/* ── Navbar ── */}
+        {/* ?????? Navbar ?????? */}
         <div style={{ background: G, padding: "0 32px", display: "flex", alignItems: "center", height: 58, boxShadow: "0 2px 12px rgba(26,101,133,0.3)" }}>
           {/* Left: Logo + Change mode */}
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -1081,21 +1133,21 @@ export default function App() {
           </div>
         </div>
 
-        {/* ── Page heading ── */}
+        {/* ?????? Page heading ?????? */}
         <div style={{ background: "#fff", borderBottom: "1px solid #e2e8f0", padding: "14px 32px", textAlign: "center" }}>
           <h1 style={{ fontSize: 17, fontWeight: 700, color: "#0f172a", letterSpacing: -0.3, margin: 0 }}>
             National Emission Baselining and Decarbonization Modeling
           </h1>
         </div>
 
-        {/* ── Main: persistent two-column ── */}
+        {/* ?????? Main: persistent two-column ?????? */}
         <div style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 32px", display: "flex", gap: 24, alignItems: "flex-start" }}>
 
-          {/* ════════════════ LEFT (60%) ════════════════ */}
+          {/* ???????????????????????????????????????????????? LEFT (60%) ???????????????????????????????????????????????? */}
           <div style={{ flex: "0 0 60%", display: "flex", flexDirection: "column", gap: 20 }}>
 
             {mode === "natural" ? (
-              /* ── Natural Language panel ── */
+              /* ?????? Natural Language panel ?????? */
               <div style={{
                 background: "#fff", borderRadius: 14, padding: "22px 24px",
                 boxShadow: "0 1px 6px rgba(0,0,0,0.05)", border: "1px solid #b2ebf2",
@@ -1103,14 +1155,15 @@ export default function App() {
                 backgroundImage: `linear-gradient(#fff,#fff), ${G}`,
                 backgroundOrigin: "border-box", backgroundClip: "padding-box, border-box",
               }}>
-                {/* Region selector — NL mode */}
+                {/* Region selector → NL mode */}
                 <div style={{ marginBottom: 16 }}>
                   <div style={lbl}>Region / Baseline</div>
                   <div style={{ display: "flex", gap: 8 }}>
                     {[
                       { id: "costa_rica", label: "Costa Rica", flagCode: "cr" },
                       { id: "mexico",     label: "Mexico",     flagCode: "mx" },
-                      { id: "uganda",     label: "Uganda",     flagCode: "ug" },
+                      { id: "ethiopia",   label: "Ethiopia",   flagCode: "et" },
+                      { id: "mexico_llm", label: "Mexico", flagCode: "mx" },
                     ].map(r => {
                       const active = region === r.id;
                       return (
@@ -1183,12 +1236,12 @@ export default function App() {
                   }}>
                     {loading
                       ? <><img src="/S360_Logo_Chakra.png" alt="" style={{ width: 16, height: 16, objectFit: "contain", animation: "spin 1s linear infinite" }} /> Analyzing…</>
-                      : <><span style={{ fontSize: 15 }}>▶</span> Run Simulation</>}
+                      : <><span style={{ fontSize: 15 }}>???</span> Run Simulation</>}
                   </button>
                 </div>
               </div>
             ) : (
-              /* ── Structured panel ── */
+              /* ?????? Structured panel ?????? */
               <div style={{
                 background: "#fff", borderRadius: 14, padding: "22px 24px",
                 boxShadow: "0 1px 6px rgba(0,0,0,0.05)", border: "1px solid #b2ebf2",
@@ -1333,7 +1386,7 @@ export default function App() {
                         background: RISK_BG[r.level], border: `1px solid ${RISK_COLOR[r.level]}40`,
                         color: RISK_COLOR[r.level], borderRadius: 20, padding: "4px 11px", fontSize: 12, fontWeight: 600,
                       }}>
-                        <span style={{ fontSize: 8 }}>●</span> {r.label}
+                        <span style={{ fontSize: 8 }}>???</span> {r.label}
                         <span style={{ fontSize: 9, fontWeight: 800, background: RISK_COLOR[r.level] + "20", padding: "1px 5px", borderRadius: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>{r.level}</span>
                       </span>
                     ))}
@@ -1356,7 +1409,7 @@ export default function App() {
                 }}>
                   {loading
                     ? <><img src="/S360_Logo_Chakra.png" alt="" style={{ width: 16, height: 16, objectFit: "contain", animation: "spin 1s linear infinite" }} /> Running…</>
-                    : <><span style={{ fontSize: 15 }}>▶</span> Run Simulation</>}
+                    : <><span style={{ fontSize: 15 }}>???</span> Run Simulation</>}
                 </button>
               </div>
             </div>
@@ -1372,7 +1425,7 @@ export default function App() {
             {/* Optimization alternatives */}
             {result && alternatives.length > 0 && (
               <div>
-                <div style={{ ...lbl, marginBottom: 12 }}>Optimization — Alternative Scenarios</div>
+                <div style={{ ...lbl, marginBottom: 12 }}>Optimization → Alternative Scenarios</div>
                 <div style={{ display: "flex", gap: 12 }}>
                   {alternatives.map((alt, i) => (
                     <div key={i} style={{
@@ -1396,7 +1449,7 @@ export default function App() {
             )}
           </div>
 
-          {/* ════════════════ RIGHT (40%) ════════════════ */}
+          {/* ???????????????????????????????????????????????? RIGHT (40%) ???????????????????????????????????????????????? */}
           <div style={{
             flex: 1,
             display: "flex",
@@ -1435,7 +1488,7 @@ export default function App() {
 
             {result && (
               <>
-                {/* ── Gas selector ── */}
+                {/* ?????? Gas selector ?????? */}
                 {result.data?.success && (
                   <div style={{ background: "#fff", border: "1px solid #b2ebf2", borderRadius: 14, padding: "14px 18px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
                     <div style={{ ...lbl, marginBottom: 10 }}>Greenhouse Gas</div>
@@ -1471,7 +1524,7 @@ export default function App() {
                   </div>
                 )}
 
-                {/* ── Stat cards — 3 horizontal ── */}
+                {/* ?????? Stat cards → 3 horizontal ?????? */}
                 {result.data?.success && gasData && (
                   <div style={{ display: "flex", gap: 10 }}>
 
@@ -1498,7 +1551,7 @@ export default function App() {
                     <div style={{ background: "#fff", border: "1px solid #b2ebf2", borderLeft: "3px solid #1e7093", borderRadius: 12, padding: "14px 16px", flex: 1.4, boxShadow: "0 1px 5px rgba(0,0,0,0.05)" }}>
                       <div style={{ fontSize: 9.5, fontWeight: 700, color: "#1a6585", letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 3 }}>Policy Applied</div>
                       <div style={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a", lineHeight: 1.3 }}>{result.data.policy_name}</div>
-                      <div style={{ fontSize: 10.5, color: "#64748b", marginTop: 3 }}>Transport · National baseline</div>
+                      <div style={{ fontSize: 10.5, color: "#64748b", marginTop: 3 }}>Transport � National baseline</div>
                     </div>
 
                     {/* Emissions Saved / Added */}
@@ -1520,10 +1573,10 @@ export default function App() {
                   </div>
                 )}
 
-                {/* ── Chart ── */}
+                {/* ?????? Chart ?????? */}
                 {chartData && (
                   <div style={{ background: "#fff", border: "1px solid #b2ebf2", borderRadius: 14, padding: "18px 20px", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
-                    <div style={{ ...lbl, marginBottom: 16 }}>{GAS_LABELS[selectedGas] || "Gas"} Emissions — Baseline vs. Policy</div>
+                    <div style={{ ...lbl, marginBottom: 16 }}>{GAS_LABELS[selectedGas] || "Gas"} Emissions → Baseline vs. Policy</div>
                     <ResponsiveContainer width="100%" height={260}>
                       <LineChart data={chartData} margin={{ top: 4, right: 12, left: 0, bottom: 4 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -1538,7 +1591,7 @@ export default function App() {
                   </div>
                 )}
 
-                {/* ── Claude's Analysis ── */}
+                {/* ?????? Claude's Analysis ?????? */}
                 {result.summary && (
                   <div style={{ background: "rgba(30,112,147,0.05)", border: "1px solid rgba(30,112,147,0.18)", borderRadius: 14, padding: "18px 20px", boxShadow: "0 1px 6px rgba(0,0,0,0.04)" }}>
                     <div style={{ ...lbl, marginBottom: 12 }}>Sustain360 Analysis</div>
@@ -1546,7 +1599,7 @@ export default function App() {
                   </div>
                 )}
 
-                {/* ── Policy Structure ── */}
+                {/* ?????? Policy Structure ?????? */}
                 {result.policy_config && (
                   <div style={{ background: "#fff", border: "1px solid #b2ebf2", borderRadius: 14, boxShadow: "0 1px 5px rgba(0,0,0,0.04)", overflow: "hidden" }}>
                     <button onClick={() => setConfigOpen(!configOpen)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 18px", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", borderBottom: configOpen ? "1px solid #b2ebf2" : "none" }}>
@@ -1568,7 +1621,7 @@ export default function App() {
                   </div>
                 )}
 
-                {/* ── View Policy button (last) ── */}
+                {/* ?????? View Policy button (last) ?????? */}
                 {result.policy_config && (
                   <div style={{ display: "flex", justifyContent: "flex-end" }}>
                     <button

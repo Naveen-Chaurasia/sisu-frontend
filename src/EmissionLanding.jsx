@@ -20,12 +20,20 @@ const COUNTRIES = [
     color:  "#3b82f6",
   },
   {
-    id:     "uganda",
-    name:   "Uganda",
-    flagCode: "ug",
+    id:     "ethiopia",
+    name:   "Ethiopia",
+    flagCode: "et",
     region: "East Africa",
-    desc:   "Emerging economy with low per-capita emissions. Focus on sustainable transport growth and clean energy access.",
+    desc:   "Fast-growing economy with large agricultural sector. Focus on land use, livestock emissions, and clean energy transition.",
     color:  "#f59e0b",
+  },
+  {
+    id:     "mexico_llm",
+    name:   "Mexico",
+    flagCode: "mx",
+    region: "North America",
+    desc:   "LLM-augmented analysis layer on Mexico's emission baseline. AI-driven policy recommendations and scenario generation.",
+    color:  "#8b5cf6",
   },
 ];
 
@@ -76,7 +84,7 @@ export default function EmissionLanding({ user, onSelectCountry, onBack, onLogou
       </div>
 
       {/* Country cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 24, maxWidth: 1040, margin: "0 auto", padding: "0 32px 60px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20, maxWidth: 1360, margin: "0 auto", padding: "0 32px 60px" }}>
         {COUNTRIES.map(c => (
           <div
             key={c.id}
@@ -98,7 +106,9 @@ export default function EmissionLanding({ user, onSelectCountry, onBack, onLogou
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 10.5, fontWeight: 700, color: c.color, letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 }}>{c.region}</div>
               <div style={{ fontSize: 22, fontWeight: 900, color: "#fff", display: "flex", alignItems: "center", gap: 10 }}>
-                {c.name}
+                <span style={c.id === "mexico_llm" || c.id === "ethiopia" ? { textDecoration: "underline", textUnderlineOffset: 4 } : {}}>
+                  {c.name}
+                </span>
                 <img src={`https://flagcdn.com/w40/${c.flagCode}.png`} alt={c.name} style={{ height: 18, borderRadius: 3, boxShadow: "0 1px 4px rgba(0,0,0,0.3)" }} />
               </div>
             </div>

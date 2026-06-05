@@ -51,10 +51,10 @@ const GB_HOW = {
 };
 
 const TOPICS = [
-  { id: "all",       label: "All Sectors" },
-  { id: "transport", label: "Transport" },
-  { id: "industry",  label: "Industry" },
-  { id: "waste",     label: "Waste" },
+  { id: "energy",      label: "Energy & Buildings" },
+  { id: "agriculture", label: "Agriculture & Land Use" },
+  { id: "industry",    label: "Industry & Manufacturing" },
+  { id: "waste",       label: "Waste & Wastewater" },
 ];
 
 const ANGLE_CFG = {
@@ -78,7 +78,7 @@ const ANALYSIS_STEPS = [
   "Analysis complete",
 ];
 
-const COUNTRY_LABELS = { costa_rica: "Costa Rica", mexico: "Mexico", uganda: "Uganda" };
+const COUNTRY_LABELS = { costa_rica: "Costa Rica", mexico: "Mexico", ethiopia: "Ethiopia", mexico_llm: "Mexico" };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -832,7 +832,7 @@ function SimulationChart({ data, policies, policyDetails }) {
 
 export default function NationalEmissionIQ({ country, onBack, user, onLogout, embedded = false }) {
   const [phase, setPhase]           = useState("idle");   // idle | analyzing | results
-  const [topic, setTopic]           = useState("transport");
+  const [topic, setTopic]           = useState("energy");
   const [question, setQuestion]     = useState("");
   const [visibleSteps, setVisibleSteps] = useState([]);
   const [fetchResult, setFetchResult]   = useState(null);
@@ -1136,7 +1136,7 @@ export default function NationalEmissionIQ({ country, onBack, user, onLogout, em
         <div style={{ width: "100%", maxWidth: 620, background: "linear-gradient(#fff,#fff) padding-box, linear-gradient(135deg,#0f2d4a,#1e7093,#67c5e0) border-box", border: "2px solid transparent", borderRadius: 16, overflow: "hidden", boxShadow: "0 0 0 6px rgba(30,112,147,0.06), 0 8px 32px rgba(30,112,147,0.1)" }}>
 
           {/* Topic chips */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 7, padding: "14px 16px 10px", borderBottom: "1px solid #f3f4f6" }}>
+          <div style={{ display: "flex", flexWrap: "nowrap", gap: 7, padding: "14px 16px 10px", borderBottom: "1px solid #f3f4f6", overflowX: "auto" }}>
             {TOPICS.map(t => (
               <button key={t.id} onClick={() => setTopic(t.id)}
                 style={{
