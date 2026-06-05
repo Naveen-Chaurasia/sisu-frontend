@@ -34,14 +34,12 @@ const GASES = [
 ];
 
 const SECTOR_COLORS = {
-  transport:   "#1e7093",
   agriculture: "#84cc16",
   energy:      "#f59e0b",
   waste:       "#8b5cf6",
   industrial:  "#ef4444",
 };
 const SECTOR_LABELS = {
-  transport:   "Transport",
   agriculture: "Agriculture",
   energy:      "Energy",
   waste:       "Waste",
@@ -203,7 +201,7 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
     return () => document.removeEventListener("mousedown", handleOutside);
   }, [sankeyDropOpen]);
   const [enabledSectors, setEnabledSectors] = useState(() =>
-    Object.fromEntries(ALL_SECTORS.map(s => [s, ["transport", "agriculture"].includes(s)]))
+    Object.fromEntries(ALL_SECTORS.map(s => [s, ["agriculture"].includes(s)]))
   );
 
   // Emissions tab — sector + timeline lifted here
@@ -275,7 +273,7 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
     setEnabledSectors(Object.fromEntries(ALL_SECTORS.map(s => [s, value])));
   }
 
-  const SNAPSHOT_SECTOR_COLORS = { energy:"#1e7093", transport:"#f59e0b", agriculture:"#10b981", waste:"#8b5cf6", industrial:"#ef4444" };
+  const SNAPSHOT_SECTOR_COLORS = { energy:"#1e7093", agriculture:"#10b981", waste:"#8b5cf6", industrial:"#ef4444" };
   const ALL_SEC_LIST = ["energy","agriculture","waste","industrial"];
 
   const SUBSECTOR_FULL = {
