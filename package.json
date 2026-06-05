@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@nivo/core": "^0.99.0",
+    "@nivo/sankey": "^0.99.0",
     "@supabase/supabase-js": "^2.106.2",
     "html2pdf.js": "^0.14.0",
     "leaflet": "^1.9.4",

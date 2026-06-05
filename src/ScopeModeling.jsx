@@ -310,7 +310,7 @@ const _selectSt = { width: "100%", padding: "8px 12px", fontSize: 13, borderRadi
 
 // ── Scope detail card (expandable) ────────────────────────────────────────────
 function ScopeCard({ scope, data, unit, expanded, onToggle, gas, selIdx, natDp = 3 }) {
-  const idx   = selIdx ?? (data?.total?.length - 1 ?? 0);
+  const idx   = selIdx ?? Math.max(0, (data?.total?.length ?? 1) - 1);
   const total = data ? (data.total[idx] ?? 0) : null;
   const modes = data ? Object.keys(data.by_mode) : [];
   const showS23 = scope.id !== "scope1" && gas !== "co2";
@@ -478,7 +478,7 @@ function ScopeCard({ scope, data, unit, expanded, onToggle, gas, selIdx, natDp =
 
 // ── Lifecycle stage card (expandable) ────────────────────────────────────────
 function LifecycleStageCard({ stage, data, unit, expanded, onToggle, gas, selIdx, natDp = 3 }) {
-  const idx   = selIdx ?? (data?.total?.length - 1 ?? 0);
+  const idx   = selIdx ?? Math.max(0, (data?.total?.length ?? 1) - 1);
   const total = data ? (data.total[idx] ?? 0) : null;
   const modes = data ? Object.keys(data.by_mode) : [];
   const co2Only = stage.id !== "scope1" && gas !== "co2";
@@ -691,7 +691,7 @@ function ModeBreakdownTooltip({ active, payload, label, unit, dp = 3 }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function ScopeModeling({ user, onBack, onLogout }) {
-  const [region, setRegion]         = useState("costa_rica");
+  const [region, setRegion]         = useState("ethiopia");
   const [gas, setGas]               = useState("co2");
   const [data, setData]             = useState(null);
   const [loading, setLoading]       = useState(false);
