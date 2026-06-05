@@ -2,19 +2,19 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://web-production-c3591.up.railway.app/api/:path*"
+      "destination": "https://sisu-backend-production.up.railway.app/api/:path*"
     },
     {
       "source": "/v2/:path*",
-      "destination": "https://web-production-c3591.up.railway.app/v2/:path*"
+      "destination": "https://sisu-backend-production.up.railway.app/v2/:path*"
     },
     {
       "source": "/mines4/:path*",
-      "destination": "https://web-production-c3591.up.railway.app/mines4/:path*"
+      "destination": "https://sisu-backend-production.up.railway.app/mines4/:path*"
     },
     {
       "source": "/emission-iq/:path*",
-      "destination": "https://web-production-c3591.up.railway.app/emission-iq/:path*"
+      "destination": "https://sisu-backend-production.up.railway.app/emission-iq/:path*"
     },
     {
       "source": "/(.*)",
