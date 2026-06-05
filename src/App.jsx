@@ -44,7 +44,7 @@ function Login({ onLogin }) {
       if (authError) {
         setError(authError.message);
       } else {
-        const n = data.user.email.split("@")[0];
+        const n = data.user.email.split("@")[0].split(".")[0];
         onLogin(n[0].toUpperCase() + n.slice(1));
       }
     } catch {
@@ -900,7 +900,7 @@ export default function App() {
 
   // Restore session on mount and listen for auth changes
   useEffect(() => {
-    const emailToName = e => { const n = e?.split("@")[0]; return n ? n[0].toUpperCase() + n.slice(1) : null; };
+    const emailToName = e => { const n = e?.split("@")[0]?.split(".")[0]; return n ? n[0].toUpperCase() + n.slice(1) : null; };
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) setAuthUser(emailToName(session.user.email));
     });
