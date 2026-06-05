@@ -315,19 +315,24 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
         const sec = ALL_SEC_LIST[i];
         const color = SNAPSHOT_SECTOR_COLORS[sec];
         const label = sec.charAt(0).toUpperCase() + sec.slice(1);
-        // by_mode.scope1 is a dict of { subsector_key: number[] }
-        const modeScope1 = d.by_mode?.scope1 || {};
-        const modeEntries = Object.entries(modeScope1).filter(([, vals]) => Array.isArray(vals));
+        // Aggregate all scopes for more subsector coverage
+        const allModes = {};
+        ["scope1", "scope2", "scope3"].forEach(sk => {
+          Object.entries(d.by_mode?.[sk] || {}).forEach(([key, vals]) => {
+            if (Array.isArray(vals)) {
+              allModes[key] = (allModes[key] || 0) + Math.max(0, vals[emSelIdx] ?? 0);
+            }
+          });
+        });
+        const modeEntries = Object.entries(allModes).filter(([, v]) => v > 0);
         if (modeEntries.length > 0) {
-          modeEntries.forEach(([key, vals]) => {
-            const v = Math.max(0, vals[emSelIdx] ?? 0);
-            if (v > 0) contributors.push({
+          modeEntries.forEach(([key, v]) => {
+            contributors.push({
               name: `${label} · ${subsectorLabel(key)}`,
               value: v, sector: sec, color,
             });
           });
         } else {
-          // fallback: use sector total
           const tot = Math.max(0, d.total?.[emSelIdx] ?? 0);
           if (tot > 0) contributors.push({ name: label, value: tot, sector: sec, color });
         }
