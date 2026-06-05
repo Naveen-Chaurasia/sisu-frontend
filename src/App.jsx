@@ -1222,7 +1222,7 @@ export default function App() {
                   }}>
                     {loading
                       ? <><img src="/S360_Logo_Chakra.png" alt="" style={{ width: 16, height: 16, objectFit: "contain", animation: "spin 1s linear infinite" }} /> Analyzing…</>
-                      : <><span style={{ fontSize: 15 }}>???</span> Run Simulation</>}
+                      : <><span style={{ fontSize: 15 }}>▶</span> Run Simulation</>}
                   </button>
                 </div>
               </div>
@@ -1395,7 +1395,7 @@ export default function App() {
                 }}>
                   {loading
                     ? <><img src="/S360_Logo_Chakra.png" alt="" style={{ width: 16, height: 16, objectFit: "contain", animation: "spin 1s linear infinite" }} /> Running…</>
-                    : <><span style={{ fontSize: 15 }}>???</span> Run Simulation</>}
+                    : <><span style={{ fontSize: 15 }}>▶</span> Run Simulation</>}
                 </button>
               </div>
             </div>
