@@ -664,7 +664,7 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
                 <div style={cardStyle}>
                   <label style={lbl}>Sector</label>
                   <select value={emSector} onChange={e => setEmSector(e.target.value)} style={{ fontSize: 13, padding: "7px 10px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#0f172a", fontFamily: "inherit", cursor: "pointer", minWidth: 190 }}>
-                    {emSectors.map(s => <option key={s.sector} value={s.sector}>{s.label}</option>)}
+                    {emSectors.filter(s => s.sector !== "transport").map(s => <option key={s.sector} value={s.sector}>{s.label}</option>)}
                   </select>
                 </div>
                 {emYears.length > 0 && (
@@ -686,7 +686,7 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
                 <div style={cardStyle}>
                   <label style={lbl}>Sector</label>
                   <select value={simSector} onChange={e => setSimSector(e.target.value)} disabled={simPolLoading} style={{ fontSize: 13, padding: "7px 10px", borderRadius: 8, border: "1px solid #e2e8f0", background: "#f8fafc", color: "#0f172a", fontFamily: "inherit", cursor: "pointer", minWidth: 190 }}>
-                    {simSectors.map(s => <option key={s.sector} value={s.sector}>{s.label}</option>)}
+                    {simSectors.filter(s => s.sector !== "transport").map(s => <option key={s.sector} value={s.sector}>{s.label}</option>)}
                   </select>
                 </div>
                 <div style={cardStyle}>
