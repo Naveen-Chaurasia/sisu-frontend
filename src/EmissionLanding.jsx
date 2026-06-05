@@ -1,4 +1,5 @@
 import { useState } from "react";
+import UserGuide from "./docs/UserGuide";
 
 const G = "linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%)";
 
@@ -38,10 +39,12 @@ const COUNTRIES = [
 ];
 
 export default function EmissionLanding({ user, onSelectCountry, onBack, onLogout }) {
-  const [hovered, setHovered] = useState(null);
+  const [hovered,   setHovered]   = useState(null);
+  const [showGuide, setShowGuide] = useState(false);
 
   return (
     <div style={{ minHeight: "100vh", fontFamily: "inherit", background: "#f8fafc" }}>
+      {showGuide && <UserGuide onClose={() => setShowGuide(false)} />}
       {/* Nav */}
       <div style={{ background: G, padding: "0 32px", display: "flex", alignItems: "center", height: 58, boxShadow: "0 2px 12px rgba(26,101,133,0.3)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -58,6 +61,15 @@ export default function EmissionLanding({ user, onSelectCountry, onBack, onLogou
           >← Projects</button>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+          <button
+            onClick={() => setShowGuide(true)}
+            style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, color: "#e0f7fa", fontSize: 12, fontWeight: 600, padding: "5px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.22)"}
+            onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+            User Guide
+          </button>
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", borderRadius: 20, padding: "5px 14px 5px 8px" }}>
             <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff" }}>{user?.[0]?.toUpperCase()}</div>
             <span style={{ fontSize: 13, fontWeight: 600, color: "#e0f7fa" }}>{user}</span>
