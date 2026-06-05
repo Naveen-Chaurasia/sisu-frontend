@@ -770,10 +770,10 @@ function getAlternatives(p) {
   const yLabel  = altYear < p.year ? "Accelerated" : "Extended";
   const alts = [
     { title: "More Ambitious",     subtitle: `Magnitude ${p.magnitude}% → ${hiMag}%`,     tag: `+${hiMag - p.magnitude}%`,       params: { ...p, magnitude: hiMag } },
-    { title: `${yLabel} Timeline`, subtitle: `Target year ${p.year} → ${altYear}`,         tag: `${p.year}???${altYear}`,           params: { ...p, year: altYear } },
+    { title: `${yLabel} Timeline`, subtitle: `Target year ${p.year} → ${altYear}`,         tag: `${p.year}→${altYear}`,           params: { ...p, year: altYear } },
   ];
   if (p.policyType === "fuel_switch" && p.targetFuel === "fuel_electricity")
-    alts.push({ title: "Hydrogen Pathway", subtitle: "Switch target: Electric → Hydrogen", tag: "H??? fuel", params: { ...p, targetFuel: "fuel_hydrogen" } });
+    alts.push({ title: "Hydrogen Pathway", subtitle: "Switch target: Electric → Hydrogen", tag: "H₂ fuel", params: { ...p, targetFuel: "fuel_hydrogen" } });
   else if (p.policyType === "fuel_switch" && p.targetFuel === "fuel_hydrogen")
     alts.push({ title: "Electric Pathway", subtitle: "Switch target: Hydrogen → Electric", tag: "EV fuel", params: { ...p, targetFuel: "fuel_electricity" } });
   else if (p.policyType === "mode_shift")
