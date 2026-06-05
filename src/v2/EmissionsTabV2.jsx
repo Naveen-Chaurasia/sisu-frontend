@@ -1012,7 +1012,7 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
             </div>
             <div style={{ flex: 1, textAlign: "center" }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: "#0f2d4a", letterSpacing: -0.3, whiteSpace: "nowrap" }}>
-                {region === "costa_rica" ? "Costa Rica" : "Mexico"}
+                {{ costa_rica: "Costa Rica", mexico: "Mexico", ethiopia: "Ethiopia", mexico_llm: "Mexico" }[region] || region}
                 <span style={{ fontWeight: 400, color: "#0f2d4a", margin: "0 10px", fontSize: 14 }}>—</span>
                 National Emission Report
               </div>
@@ -1224,7 +1224,7 @@ export default function EmissionsTabV2({ region, gas, unit, sector, selIdx, onDa
                 Emission Trajectory 2015–2050
               </div>
               <div style={{ fontSize: 11, color: "#64748b", marginBottom: 4 }}>
-                {sectorMeta.label} · {region === "costa_rica" ? "Costa Rica" : "Mexico"} · {unit}
+                {sectorMeta.label} · {{ costa_rica: "Costa Rica", mexico: "Mexico", ethiopia: "Ethiopia", mexico_llm: "Mexico" }[region] || region} · {unit}
               </div>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
                 {activeSeries.map(s => (
