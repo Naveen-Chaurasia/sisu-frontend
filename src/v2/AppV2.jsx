@@ -333,7 +333,7 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
         }
       });
       contributors.sort((a, b) => b.value - a.value);
-      const top10 = contributors.slice(0, 5);
+      const top10 = contributors.slice(0, 8);
       const grand = top10.reduce((s, c) => s + c.value, 0) || 1;
       top10.forEach(c => { c.pct = +((c.value / grand) * 100).toFixed(1); });
       setSnapshotRows(top10.length > 0 ? top10 : []);
@@ -774,7 +774,7 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
         <div onClick={() => setSnapshotOpen(false)} style={{
           position: "fixed", top: 56, left: sidebarOpen ? 240 : 0, right: 0, bottom: 0,
           background: "radial-gradient(ellipse at 50% 40%, rgba(30,112,147,0.18) 0%, rgba(11,31,53,0.72) 100%)",
-          zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+          zIndex: 999, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 24px",
         }}>
           <div onClick={e => e.stopPropagation()} style={{
             background: "linear-gradient(175deg, #f0f7ff 0%, #ffffff 40%, #fafbfc 100%)",
@@ -801,7 +801,7 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
                     </svg>
                   </div>
                   <div style={{ fontSize: 19, fontWeight: 800, color: "#fff", letterSpacing: -0.3 }}>
-                    Top 5 Emission Hotspots
+                    Top 8 Emission Hotspots
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -855,7 +855,7 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
                     {snapshotRows.map((row, i) => {
                       const fmtVal = row.value >= 1e6 ? `${(row.value/1e6).toFixed(2)}M` : row.value >= 1e3 ? `${(row.value/1e3).toFixed(1)}K` : row.value.toFixed(1);
                       return (
-                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0", borderBottom: i < 4 ? "1px solid #f8fafc" : "none" }}>
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0", borderBottom: i < 7 ? "1px solid #f8fafc" : "none" }}>
                           <div style={{
                             width: 24, height: 24, borderRadius: 7, flexShrink: 0,
                             background: i === 0 ? "linear-gradient(135deg,#f59e0b,#d97706)" : i === 1 ? "linear-gradient(135deg,#94a3b8,#64748b)" : i === 2 ? "linear-gradient(135deg,#cd7c3a,#b45309)" : "#f1f5f9",
