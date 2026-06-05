@@ -1257,7 +1257,7 @@ export default function App() {
                   {[
                     { id: "costa_rica", label: "Costa Rica", flagCode: "cr" },
                     { id: "mexico",     label: "Mexico",     flagCode: "mx" },
-                    { id: "uganda",     label: "Uganda",     flagCode: "ug" },
+                    { id: "ethiopia",   label: "Ethiopia",   flagCode: "et" },
                   ].map(r => {
                     const active = region === r.id;
                     return (
