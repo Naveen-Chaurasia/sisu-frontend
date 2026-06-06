@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import InvestmentUserGuide from "../docs/InvestmentUserGuide";
 import { fetchMinesList, invalidateCache, deleteMine as deleteMineApi } from "./api4";
 
 const G    = "linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%)";
@@ -45,6 +46,7 @@ export default function Mines4Landing({ user, onSelectMine, onBack, onLogout }) 
   const [error,     setError]     = useState(null);
   const [deleting,  setDeleting]  = useState(null);
   const [confirmId, setConfirmId] = useState(null);
+  const [showGuide, setShowGuide] = useState(false);
 
   useEffect(() => {
     fetchMinesList()
@@ -68,22 +70,13 @@ export default function Mines4Landing({ user, onSelectMine, onBack, onLogout }) 
 
       {/* Navbar */}
       <div style={{ background: G, padding: "0 32px", display: "flex", alignItems: "center", height: 58, boxShadow: "0 2px 12px rgba(26,101,133,0.3)", position: "sticky", top: 0, zIndex: 100 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
           <img
             src="/Sustain360 - Dark Blue.png"
             alt="Sustain360"
             onClick={onBack}
             style={{ height: 32, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)", cursor: "pointer" }}
           />
-          <div style={{ width: 1, height: 22, background: "rgba(255,255,255,0.2)" }} />
-          <button
-            onClick={onBack}
-            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.22)"}
-            onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}
-            style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, color: "#e0f7fa", fontSize: 12, fontWeight: 600, padding: "5px 14px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-            Projects
-          </button>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.12)", borderRadius: 20, padding: "5px 14px 5px 8px" }}>
@@ -103,16 +96,60 @@ export default function Mines4Landing({ user, onSelectMine, onBack, onLogout }) 
         </div>
       </div>
 
+      {showGuide && <InvestmentUserGuide onClose={() => setShowGuide(false)} />}
+
+      {/* Body: sidebar + main */}
+      <div style={{ display: "flex", minHeight: "calc(100vh - 58px)" }}>
+
+        {/* Sidebar */}
+        <div style={{
+          width: 200, flexShrink: 0,
+          background: "linear-gradient(180deg, #0a1e30 0%, #0f2d4a 40%, #1a4a72 100%)",
+          display: "flex", flexDirection: "column",
+          borderRight: "1px solid rgba(255,255,255,0.08)",
+        }}>
+          <nav style={{ padding: "14px 8px", flex: 1 }}>
+            <button onClick={onBack}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.07)"; e.currentTarget.style.color = "rgba(255,255,255,0.85)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.55)"; }}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 8,
+                padding: "9px 12px", borderRadius: 8,
+                background: "transparent", border: "1px solid transparent",
+                color: "rgba(255,255,255,0.55)", fontSize: 13, fontWeight: 500,
+                cursor: "pointer", textAlign: "left", fontFamily: "inherit", transition: "all 0.15s",
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              Modules
+            </button>
+            <button onClick={() => setShowGuide(true)}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.07)"; e.currentTarget.style.color = "rgba(255,255,255,0.85)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.55)"; }}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 8,
+                padding: "9px 12px", borderRadius: 8, marginTop: 4,
+                background: "transparent", border: "1px solid transparent",
+                color: "rgba(255,255,255,0.55)", fontSize: 13, fontWeight: 500,
+                cursor: "pointer", textAlign: "left", fontFamily: "inherit", transition: "all 0.15s",
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              User Guide
+            </button>
+          </nav>
+          <div style={{ padding: "12px 20px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 10, color: "rgba(255,255,255,0.3)" }}>
+            &copy; Sustain360
+          </div>
+        </div>
+
       {/* Hero */}
-      <div style={{ background: "#ffffff", minHeight: "calc(100vh - 58px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 32px", position: "relative", overflow: "hidden" }}>
+      <div style={{ background: "#ffffff", flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 32px", position: "relative", overflow: "hidden" }}>
 
         <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 1320 }}>
 
           {/* Title */}
           <div style={{ textAlign: "center", marginBottom: 44 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "rgba(15,45,74,0.07)", border: "1px solid rgba(15,45,74,0.12)", borderRadius: 20, padding: "5px 16px", fontSize: 11, fontWeight: 700, color: "#1a6585", letterSpacing: 1, textTransform: "uppercase", marginBottom: 18 }}>
-              Critical Minerals · Mozambique Portfolio
-            </div>
             <h1 style={{ fontSize: 42, fontWeight: 900, color: "#0f2d4a", margin: "0 0 12px", letterSpacing: -1, lineHeight: 1.1 }}>
               Investment <span style={{ color: "#1e7093" }}>Modeling</span>
             </h1>
@@ -132,6 +169,7 @@ export default function Mines4Landing({ user, onSelectMine, onBack, onLogout }) 
                   onClick={() => onSelectMine(mine.id)}
                   onDelete={e => { e.stopPropagation(); setConfirmId(mine.id); }}
                   deleting={deleting === mine.id}
+                  isAdmin={user?.toLowerCase().includes("naveen")}
                 />
               ))}
               <AddMineCard onClick={() => onSelectMine("__new__")} />
@@ -165,11 +203,12 @@ export default function Mines4Landing({ user, onSelectMine, onBack, onLogout }) 
           </div>
         </div>
       </div>
+      </div> {/* end sidebar+main */}
     </div>
   );
 }
 
-function MineCard({ mine, image, onClick, onDelete, deleting }) {
+function MineCard({ mine, image, onClick, onDelete, deleting, isAdmin }) {
   const [hovered, setHovered] = useState(false);
 
   const comms = mine.commodities || [];
@@ -228,10 +267,10 @@ function MineCard({ mine, image, onClick, onDelete, deleting }) {
 
         {/* Metrics grid */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
-          <Metric label="NPV" value={fmtM(mine.npv)} positive={mine.npv >= 0} />
-          <Metric label="IRR" value={fmtPct(mine.irr)} />
-          <Metric label="MOIC" value={mine.moic != null ? `${mine.moic.toFixed(2)}×` : "—"} />
-          <Metric label="Payback" value={mine.payback != null ? `${mine.payback}yr` : "—"} />
+          <Metric label="Net Present Value"          value={fmtM(mine.npv)} positive={mine.npv >= 0} />
+          <Metric label="Internal Rate of Return"  value={fmtPct(mine.irr)} />
+          <Metric label="Multiple on Invested Capital" value={mine.moic != null ? `${mine.moic.toFixed(2)}×` : "—"} />
+          <Metric label="Payback Period"           value={mine.payback != null ? `${mine.payback} yr` : "—"} />
         </div>
 
         {/* Commodity badges */}
@@ -261,15 +300,17 @@ function MineCard({ mine, image, onClick, onDelete, deleting }) {
               <path d="M5 12h14M12 5l7 7-7 7"/>
             </svg>
           </div>
-          <button
-            onClick={onDelete}
-            title="Delete mine"
-            style={{ background: "rgba(239,68,68,0.18)", border: "1px solid rgba(239,68,68,0.35)", borderRadius: 7, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            {deleting
-              ? <span style={{ fontSize: 10, color: "#fca5a5" }}>…</span>
-              : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fca5a5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-            }
-          </button>
+          {isAdmin && (
+            <button
+              onClick={onDelete}
+              title="Delete mine"
+              style={{ background: "rgba(239,68,68,0.18)", border: "1px solid rgba(239,68,68,0.35)", borderRadius: 7, padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {deleting
+                ? <span style={{ fontSize: 10, color: "#fca5a5" }}>…</span>
+                : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fca5a5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              }
+            </button>
+          )}
         </div>
 
       </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { THEME } from "./constants4";
 import { fetchMinesList, invalidateCache } from "./api4";
+import InvestmentUserGuide from "../docs/InvestmentUserGuide";
 import MineRegistry4     from "./MineRegistry4";
 import MineProfile4      from "./MineProfile4";
 import FinancialModel4   from "./FinancialModel4";
@@ -127,6 +128,7 @@ export default function MinesApp4({ user, onBack, onLogout, initialMineId }) {
   const [selMineId,   setSelMineId]   = useState(initialMineId && initialMineId !== "__new__" ? initialMineId : null);
   const [loading,     setLoading]     = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showGuide,   setShowGuide]   = useState(false);
 
   const loadMines = () => {
     invalidateCache();
@@ -163,6 +165,7 @@ export default function MinesApp4({ user, onBack, onLogout, initialMineId }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "Inter, sans-serif", background: THEME.bg }}>
       <style>{`@keyframes chakra-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      {showGuide && <InvestmentUserGuide onClose={() => setShowGuide(false)} />}
 
       {/* ── Top bar ───────────────────────────────────────────────────────── */}
       <div style={{
@@ -181,27 +184,6 @@ export default function MinesApp4({ user, onBack, onLogout, initialMineId }) {
             onClick={onBack}
             style={{ height: 42, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)", flexShrink: 0, cursor: onBack ? "pointer" : "default" }}
           />
-          {onBack && (
-            <>
-              <div style={{ width: 1, height: 22, background: "rgba(255,255,255,0.2)" }} />
-              <button
-                onClick={onBack}
-                onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.22)"}
-                onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}
-                style={{
-                  background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)",
-                  borderRadius: 8, color: "#e0f7fa", fontSize: 12, fontWeight: 600,
-                  padding: "5px 14px", cursor: "pointer", fontFamily: "inherit",
-                  display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
-                }}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 12H5M12 5l-7 7 7 7"/>
-                </svg>
-                Projects
-              </button>
-            </>
-          )}
         </div>
 
         {/* Center: title */}
@@ -280,32 +262,43 @@ export default function MinesApp4({ user, onBack, onLogout, initialMineId }) {
       {/* ── Body ─────────────────────────────────────────────────────────── */}
       <div style={{ display: "flex", flex: 1, overflow: "hidden", position: "relative" }}>
 
+        {/* Always-visible Projects button — floats over sidebar area, never collapses */}
+        {onBack && (
+          <div style={{
+            position: "absolute", top: 0, left: 0, width: 220, zIndex: 60,
+            background: sidebarOpen ? "linear-gradient(180deg, #0a1e30 0%, #0f2d4a 100%)" : "transparent",
+            padding: "10px 8px",
+            borderBottom: sidebarOpen ? "1px solid rgba(255,255,255,0.08)" : "none",
+            borderRight: sidebarOpen ? "1px solid rgba(255,255,255,0.08)" : "none",
+          }}>
+            <button
+              onClick={onBack}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.07)"; e.currentTarget.style.color = "rgba(255,255,255,0.85)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.55)"; }}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 8,
+                padding: "9px 12px", borderRadius: 8,
+                background: "transparent",
+                border: sidebarOpen ? "1px solid rgba(255,255,255,0.15)" : "none",
+                color: sidebarOpen ? "rgba(255,255,255,0.55)" : "#1e7093",
+                fontSize: 13, fontWeight: 600,
+                cursor: "pointer", textAlign: "left", fontFamily: "inherit", transition: "all 0.15s",
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              Projects
+            </button>
+          </div>
+        )}
+
         {/* Sidebar */}
         {sidebarOpen && (
           <div style={{
             width: 220, background: "linear-gradient(180deg, #0a1e30 0%, #0f2d4a 40%, #1a4a72 100%)",
             display: "flex", flexDirection: "column",
             borderRight: "1px solid rgba(255,255,255,0.08)",
-            flexShrink: 0, position: "relative",
+            flexShrink: 0, position: "relative", paddingTop: 57,
           }}>
-            {/* Collapse tab */}
-            <button
-              onClick={() => setSidebarOpen(false)}
-              onMouseEnter={e => { e.currentTarget.style.background = THEME.primary; e.currentTarget.style.color = "#fff"; e.currentTarget.style.width = "20px"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "#0f2d4a"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; e.currentTarget.style.width = "16px"; }}
-              style={{
-                position: "absolute", right: -16, top: 0,
-                zIndex: 50, background: "#0f2d4a",
-                border: "1px solid rgba(255,255,255,0.15)", borderLeft: "none",
-                borderRadius: "0 8px 8px 0", color: "rgba(255,255,255,0.7)",
-                cursor: "pointer", width: 16, height: 56,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: "2px 0 8px rgba(0,0,0,0.25)", transition: "all 0.15s",
-              }}
-            >
-              <IconChevron dir="left" />
-            </button>
-
             {/* Header block */}
             <div style={{
               padding: "18px 20px 14px",
@@ -374,6 +367,25 @@ export default function MinesApp4({ user, onBack, onLogout, initialMineId }) {
               </button>
             </nav>
 
+            {/* User Guide button */}
+            <div style={{ padding: "10px 8px", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+              <button
+                onClick={() => setShowGuide(true)}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.07)"; e.currentTarget.style.color = "rgba(255,255,255,0.85)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.55)"; }}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 10,
+                  padding: "9px 12px", borderRadius: 8,
+                  background: "transparent", border: "1px solid transparent",
+                  color: "rgba(255,255,255,0.55)", fontSize: 13, fontWeight: 500,
+                  cursor: "pointer", textAlign: "left", fontFamily: "inherit", transition: "all 0.15s",
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                User Guide
+              </button>
+            </div>
+
             {/* Footer */}
             <div style={{ padding: "12px 20px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 10, color: "rgba(255,255,255,0.3)" }}>
               Mozambique Asset Portfolio · {mines.length} mine{mines.length !== 1 ? "s" : ""}
@@ -381,31 +393,12 @@ export default function MinesApp4({ user, onBack, onLogout, initialMineId }) {
           </div>
         )}
 
-        {/* Expand tab — shown when sidebar collapsed */}
-        {!sidebarOpen && (
-          <button
-            onClick={() => setSidebarOpen(true)}
-            onMouseEnter={e => { e.currentTarget.style.background = THEME.primary; e.currentTarget.style.color = "#fff"; e.currentTarget.style.width = "24px"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "#0f2d4a"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; e.currentTarget.style.width = "20px"; }}
-            style={{
-              position: "absolute", left: 0, top: 0,
-              zIndex: 50, background: "#0f2d4a",
-              border: "1px solid rgba(255,255,255,0.15)", borderLeft: "none",
-              borderRadius: "0 8px 8px 0", color: "rgba(255,255,255,0.7)",
-              cursor: "pointer", width: 20, height: 56,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "2px 0 8px rgba(0,0,0,0.2)", transition: "all 0.15s",
-            }}
-          >
-            <IconChevron dir="right" />
-          </button>
-        )}
 
         {/* Main area */}
         <div style={{ flex: 1, overflow: "auto" }}>
           <div style={{ padding: 28 }}>
             {screen === "registry"    && <MineRegistry4    mines={mines} onSelectMine={handleSelectMine} />}
-            {screen === "profile"     && <MineProfile4     mineId={selMineId} onCreated={handleCreated} onReload={loadMines} onNavigate={setScreen} onDeleted={() => { loadMines(); setSelMineId(null); setScreen("registry"); }} />}
+            {screen === "profile"     && <MineProfile4     mineId={selMineId} onCreated={handleCreated} onReload={loadMines} onNavigate={setScreen} onDeleted={() => { loadMines(); setSelMineId(null); setScreen("registry"); }} user={user} />}
             {screen === "financial"   && <FinancialModel4  mineId={selMineId} />}
             {screen === "bridge"      && <NPVBridge4       mineId={selMineId} mineColor={selMine?.color} />}
             {screen === "scenarios"   && <ScenarioAnalysis4 mineId={selMineId} />}

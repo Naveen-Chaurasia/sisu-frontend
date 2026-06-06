@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import UserGuide from "../docs/UserGuide";
 import EmissionsTabV2  from "./EmissionsTabV2";
 import SimulationTabV2 from "./SimulationTabV2";
 import NetZeroPlanV2   from "./NetZeroPlanV2";
@@ -173,6 +174,7 @@ function SectorFilterDropdown({ enabledSectors, onToggleSector, onToggleAll }) {
 
 export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopia" }) {
   const [sidebarOpen,    setSidebarOpen]    = useState(true);
+  const [showGuide,      setShowGuide]      = useState(false);
   const [pageTab,        setPageTab]        = useState("emissions");
   const [region,         setRegion]         = useState(initialRegion);
   const [gas,            setGas]            = useState("co2");
@@ -489,6 +491,7 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
 
   return (
     <div style={{ height: "100vh", fontFamily: "Inter, sans-serif", background: "#f1f5f9", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {showGuide && <UserGuide onClose={() => setShowGuide(false)} />}
 
       {/* ── Top Navbar ── */}
       <div style={{
@@ -497,10 +500,6 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
         flexShrink: 0, zIndex: 100,
       }}>
         <img src="/Sustain360 - Dark Blue.png" alt="Sustain360" style={{ height: 38, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)" }} />
-        <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.7)", display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 600 }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-          Back
-        </button>
         <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none" }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>Multi-Sector Emission Explorer</span>
         </div>
@@ -513,34 +512,39 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
       {/* ── Body: Sidebar + Content ── */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
 
-        {/* Collapse tab — outside sidebar so overflowY doesn't clip it */}
-        {sidebarOpen && (
+        {/* Always-visible Projects button — floats over sidebar, never collapses */}
+        <div style={{
+          position: "absolute", top: 0, left: 0, width: 240, zIndex: 1200,
+          background: sidebarOpen ? "linear-gradient(180deg, #0a1e30 0%, #0f2d4a 100%)" : "transparent",
+          padding: "10px 8px",
+          borderBottom: sidebarOpen ? "1px solid rgba(255,255,255,0.08)" : "none",
+          borderRight: sidebarOpen ? "1px solid rgba(255,255,255,0.07)" : "none",
+        }}>
           <button
-            onClick={() => setSidebarOpen(false)}
-            onMouseEnter={e => { e.currentTarget.style.background = "#1e7093"; e.currentTarget.style.color = "#fff"; e.currentTarget.style.width = "20px"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "#0f2d4a"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; e.currentTarget.style.width = "16px"; }}
+            onClick={onBack}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.07)"; e.currentTarget.style.color = "rgba(255,255,255,0.85)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = sidebarOpen ? "rgba(255,255,255,0.55)" : "#1e7093"; }}
             style={{
-              position: "absolute", left: 240, top: 0,
-              zIndex: 1100, background: "#0f2d4a",
-              border: "1px solid rgba(255,255,255,0.15)", borderLeft: "none",
-              borderRadius: "0 8px 8px 0", color: "rgba(255,255,255,0.7)",
-              cursor: "pointer", width: 16, height: 52,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "2px 0 8px rgba(0,0,0,0.25)", transition: "all 0.15s",
+              width: "100%", display: "flex", alignItems: "center", gap: 8,
+              padding: "9px 12px", borderRadius: 8,
+              background: "transparent",
+              border: sidebarOpen ? "1px solid rgba(255,255,255,0.15)" : "none",
+              color: sidebarOpen ? "rgba(255,255,255,0.55)" : "#1e7093",
+              fontSize: 13, fontWeight: 600,
+              cursor: "pointer", textAlign: "left", fontFamily: "inherit", transition: "all 0.15s",
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            Projects
           </button>
-        )}
+        </div>
 
         {/* ── Sidebar ── */}
         {sidebarOpen && (
           <div style={{
             width: 240, background: SB, display: "flex", flexDirection: "column",
             borderRight: "1px solid rgba(255,255,255,0.07)", flexShrink: 0,
-            overflowY: "auto",
+            overflowY: "auto", paddingTop: 57,
           }}>
 
             {/* Country badge */}
@@ -618,6 +622,25 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
 
             </nav>
 
+            {/* User Guide button */}
+            <div style={{ padding: "10px 8px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+              <button
+                onClick={() => setShowGuide(true)}
+                onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.07)"; e.currentTarget.style.color = "rgba(255,255,255,0.85)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.55)"; }}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 10,
+                  padding: "9px 12px", borderRadius: 8,
+                  background: "transparent", border: "1px solid transparent",
+                  color: "rgba(255,255,255,0.55)", fontSize: 13, fontWeight: 500,
+                  cursor: "pointer", textAlign: "left", fontFamily: "inherit", transition: "all 0.15s",
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                User Guide
+              </button>
+            </div>
+
             {/* Footer */}
             <div style={{ padding: "10px 16px", borderTop: "1px solid rgba(255,255,255,0.06)", fontSize: 9.5, color: "rgba(255,255,255,0.25)" }}>
               Powered by Sustain360.ai · GHG Protocol
@@ -625,27 +648,6 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
           </div>
         )}
 
-        {/* Expand tab when sidebar collapsed */}
-        {!sidebarOpen && (
-          <button
-            onClick={() => setSidebarOpen(true)}
-            onMouseEnter={e => { e.currentTarget.style.background = "#1e7093"; e.currentTarget.style.color = "#fff"; e.currentTarget.style.width = "24px"; }}
-            onMouseLeave={e => { e.currentTarget.style.background = "#0f2d4a"; e.currentTarget.style.color = "rgba(255,255,255,0.7)"; e.currentTarget.style.width = "20px"; }}
-            style={{
-              position: "absolute", left: 0, top: 0,
-              zIndex: 1100, background: "#0f2d4a",
-              border: "1px solid rgba(255,255,255,0.15)", borderLeft: "none",
-              borderRadius: "0 8px 8px 0", color: "rgba(255,255,255,0.7)",
-              cursor: "pointer", width: 20, height: 52,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "2px 0 8px rgba(0,0,0,0.2)", transition: "all 0.15s", flexShrink: 0,
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
-          </button>
-        )}
 
         {/* ── Main content area ── */}
         <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>

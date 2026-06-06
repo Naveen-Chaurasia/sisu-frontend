@@ -14,7 +14,7 @@ const fmtPc = v => v == null ? "—" : `${(v * 100).toFixed(1)}%`;
 const fmtXx = v => v == null ? "—" : `${Number(v).toFixed(2)}x`;
 const fmtYr = v => v == null ? "—" : typeof v === "string" ? v : `${v.toFixed(1)} yr`;
 
-const SCENARIOS = ["Bear", "Base", "Bull", "Single"];
+const SCENARIOS = ["Single", "Base", "Bull", "Bear"];
 
 const COMM_COLORS = {
   Gold: "#f59e0b", Graphite: "#10b981", REE: "#3b82f6",

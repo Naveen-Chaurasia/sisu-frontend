@@ -120,19 +120,35 @@ function Section({ title, open, onToggle, children, badge }) {
 const GRAD_BORDER = "linear-gradient(135deg, #1e7093 0%, #2a9bbf 50%, #67c5e0 100%)";
 
 // ── Metric card ────────────────────────────────────────────────────────────────
-function MetCard({ label, value, color, sub, accentColor }) {
+function MetCard({ label, value, color, sub, accentColor, tooltip }) {
   const accent = accentColor || color || THEME.primary;
+  const [showTip, setShowTip] = useState(false);
   return (
     <div style={{
         background: "#fff", borderRadius: 10, padding: "14px 16px",
         boxShadow: "0 0 0 1.5px #1e7093",
-        position: "relative", overflow: "hidden",
+        position: "relative", overflow: "visible",
       }}>
         <div style={{
           position: "absolute", top: 0, right: 0, width: 60, height: 60,
           background: `${accent}08`, borderRadius: "0 12px 0 60px",
+          pointerEvents: "none",
         }} />
-        <div style={{ fontSize: 9.5, fontWeight: 700, color: "#94a3b8", letterSpacing: 0.7, textTransform: "uppercase", marginBottom: 6 }}>{label}</div>
+        <div style={{ fontSize: 9.5, fontWeight: 700, color: "#94a3b8", letterSpacing: 0.7, textTransform: "uppercase", marginBottom: 6, display: "flex", alignItems: "center", gap: 5 }}>
+          {label}
+          {tooltip && (
+            <span style={{ position: "relative", display: "inline-flex" }}
+              onMouseEnter={() => setShowTip(true)}
+              onMouseLeave={() => setShowTip(false)}>
+              <span style={{ width: 14, height: 14, borderRadius: "50%", background: "#e2e8f0", border: "1px solid #cbd5e1", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 800, color: "#64748b", cursor: "default", lineHeight: 1, flexShrink: 0 }}>i</span>
+              {showTip && (
+                <div style={{ position: "absolute", top: 18, left: 0, zIndex: 200, background: "#0f2d4a", color: "#e0f7fa", fontSize: 11, padding: "5px 10px", borderRadius: 7, whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(0,0,0,0.3)", fontWeight: 500, letterSpacing: 0 }}>
+                  {tooltip}
+                </div>
+              )}
+            </span>
+          )}
+        </div>
         <div style={{ fontSize: 22, fontWeight: 900, color: color || THEME.primaryDark, lineHeight: 1 }}>{value}</div>
         {sub && <div style={{ fontSize: 10, color: THEME.muted, marginTop: 5 }}>{sub}</div>}
     </div>
@@ -195,21 +211,22 @@ function ScenRow({ scen, mineId, onSaved, alwaysOpen }) {
       {(open || alwaysOpen) && <div style={{ padding: "12px 14px", background: "#fafcfe" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
           {[
-            { k: "price_base",            label: "Price Base",        type: "number", req: true  },
-            { k: "price_unit",            label: "Price Unit",        opts: PRICE_UNITS           },
-            { k: "price_escalation_rate", label: "Price Esc %",       type: "number"              },
-            { k: "annual_production",     label: "Annual Production", type: "number", req: true  },
-            { k: "opex_steady_state",     label: "OPEX ($/yr)",       type: "number", req: true  },
-            { k: "opex_escalation_rate",  label: "OPEX Esc %",        type: "number"              },
-            { k: "initial_capex",         label: "Initial CAPEX ($)", type: "number", req: true  },
-            { k: "sustaining_capex_pa",   label: "Sust. CAPEX/yr",    type: "number"              },
-            { k: "capex_deployment_year", label: "CAPEX Year",        type: "number"              },
-            { k: "production_start_year", label: "Prod Start Year",   type: "number"              },
-            { k: "depreciation_pa",       label: "Dep. p.a. ($)",     type: "number"              },
-            { k: "royalty_rate",          label: "Royalty Rate",      type: "number"              },
-          ].map(({ k, label, type, opts, req }) => (
-            <Inp key={k} label={label} type={type} options={opts} required={req}
-              value={val(k)} onChange={v => set(k, v)} />
+            { k: "price_base",            label: "Price Base",        type: "number", req: true       },
+            { k: "price_unit",            label: "Price Unit",        opts: PRICE_UNITS              },
+            { k: "price_escalation_rate", label: "Price Esc",         type: "number",  pct: true     },
+            { k: "annual_production",     label: "Annual Production", type: "number", req: true       },
+            { k: "opex_steady_state",     label: "OPEX ($/yr)",       type: "number", req: true       },
+            { k: "opex_escalation_rate",  label: "OPEX Esc",          type: "number",  pct: true     },
+            { k: "initial_capex",         label: "Initial CAPEX ($)", type: "number", req: true       },
+            { k: "sustaining_capex_pa",   label: "Sust. CAPEX/yr",    type: "number"                 },
+            { k: "capex_deployment_year", label: "CAPEX Year",        type: "number"                 },
+            { k: "production_start_year", label: "Prod Start Year",   type: "number"                 },
+            { k: "depreciation_pa",       label: "Dep. p.a. ($)",     type: "number"                 },
+            { k: "royalty_rate",          label: "Royalty Rate",      type: "number",  pct: true     },
+          ].map(({ k, label, type, opts, req, pct }) => (
+            <Inp key={k} label={label} type={type} options={opts} required={req} unit={pct ? "%" : undefined}
+              value={pct ? (val(k) !== "" && val(k) != null ? +parseFloat(val(k) * 100).toFixed(6) : "") : val(k)}
+              onChange={v => set(k, pct ? (v !== "" ? parseFloat(v) / 100 : "") : v)} />
           ))}
         </div>
       </div>}
@@ -218,11 +235,11 @@ function ScenRow({ scen, mineId, onSaved, alwaysOpen }) {
 }
 
 // ── Commodity card ─────────────────────────────────────────────────────────────
-function CommodityCard({ comm, mineId, onReload, onDeleteComm, onDeleteScen }) {
+function CommodityCard({ comm, mineId, onReload, onDeleteComm, onDeleteScen, isAdmin }) {
   const [open, setOpen] = useState(true);
   const commColor = getCommColor(comm.commodity);
   const sorted = (comm.scenarios || []).slice().sort((a, b) => {
-    const order = { Single: 0, Base: 0, Bear: 1, Bull: 2 };
+    const order = { Single: 0, Base: 0, Bull: 1, Bear: 2 };
     return (order[a.scenario] ?? 3) - (order[b.scenario] ?? 3);
   });
   const defaultScen = sorted.find(s => s.scenario === "Base" || s.scenario === "Single") || sorted[0];
@@ -249,12 +266,14 @@ function CommodityCard({ comm, mineId, onReload, onDeleteComm, onDeleteScen }) {
           </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button onClick={e => { e.stopPropagation(); onDeleteComm?.(comm.id, comm.commodity); }}
-            title="Delete commodity"
-            style={{ padding: "4px 9px", fontSize: 11, background: "rgba(255,255,255,0.2)", color: "#fff",
-              border: "1px solid rgba(255,255,255,0.3)", borderRadius: 5, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-          </button>
+          {isAdmin && (
+            <button onClick={e => { e.stopPropagation(); onDeleteComm?.(comm.id, comm.commodity); }}
+              title="Delete commodity"
+              style={{ padding: "4px 9px", fontSize: 11, background: "rgba(255,255,255,0.2)", color: "#fff",
+                border: "1px solid rgba(255,255,255,0.3)", borderRadius: 5, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+            </button>
+          )}
           <span style={{ fontSize: 16, color: "rgba(255,255,255,0.85)", transform: open ? "rotate(180deg)" : "none", transition: "0.2s" }}>▾</span>
         </div>
       </div>
@@ -283,11 +302,13 @@ function CommodityCard({ comm, mineId, onReload, onDeleteComm, onDeleteScen }) {
                         }}>{s.scenario}</button>
                       </div>
                     )}
-                    <button onClick={() => onDeleteScen?.(s.id, `${s.scenario} — ${comm.commodity}`)}
-                      title="Delete scenario"
-                      style={{ padding: "3px 5px", background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 4, cursor: "pointer", display: "flex", alignItems: "center" }}>
-                      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                    </button>
+                    {isAdmin && (
+                      <button onClick={() => onDeleteScen?.(s.id, `${s.scenario} — ${comm.commodity}`)}
+                        title="Delete scenario"
+                        style={{ padding: "3px 5px", background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 4, cursor: "pointer", display: "flex", alignItems: "center" }}>
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -531,7 +552,8 @@ function RiskTable({ rows, onChange, columns, newRowTemplate }) {
 // ════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ════════════════════════════════════════════════════════════════════
-export default function MineProfile4({ mineId, onCreated, onReload, onNavigate, onDeleted }) {
+export default function MineProfile4({ mineId, onCreated, onReload, onNavigate, onDeleted, user }) {
+  const isAdmin = user?.toLowerCase().includes("naveen");
   const [mine,       setMine]       = useState(null);
   const [loading,    setLoading]    = useState(false);
   const [ed,         setEd]         = useState({});
@@ -786,7 +808,7 @@ export default function MineProfile4({ mineId, onCreated, onReload, onNavigate, 
               {saving ? "Saving…" : isNew ? "Create Mine" : "Save Changes"}
             </button>
           )}
-          {!isNew && (
+          {!isNew && isAdmin && (
             <button onClick={() => setConfirmDel({ type: "mine", id: mineId, label: mine?.mine_name })}
               title="Delete this mine"
               style={{ padding: "9px 12px", fontSize: 12, fontWeight: 700, background: "#fee2e2", color: "#ef4444", border: "1px solid #fca5a5", borderRadius: 9, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 5 }}>
@@ -868,13 +890,13 @@ export default function MineProfile4({ mineId, onCreated, onReload, onNavigate, 
       {!isNew && (
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 14 }}>
-            <MetCard label="NPV"     value={fmtM(activeMet.npv)}
+            <MetCard label="Net Present Value"          value={fmtM(activeMet.npv)}
               color={activeMet.npv != null ? (activeMet.npv >= 0 ? "#10b981" : "#ef4444") : "#94a3b8"}
               accentColor={activeMet.npv != null ? (activeMet.npv >= 0 ? "#10b981" : "#ef4444") : "#94a3b8"}
               sub={activeMet.total_lom_revenue ? `LOM Rev: ${fmtM(activeMet.total_lom_revenue)}` : undefined} />
-            <MetCard label="IRR"     value={fmtPc(activeMet.irr)}         color={THEME.primary}  accentColor={THEME.primary} />
-            <MetCard label="Payback" value={activeMet.payback || "—"}     color="#8b5cf6"        accentColor="#8b5cf6" />
-            <MetCard label="MOIC"    value={fmtXx(activeMet.moic)}        color="#f59e0b"        accentColor="#f59e0b"
+            <MetCard label="Internal Rate of Return"   value={fmtPc(activeMet.irr)}  color={THEME.primary} accentColor={THEME.primary} />
+            <MetCard label="Payback Period"            value={activeMet.payback != null ? `${activeMet.payback} yr` : "—"} color="#8b5cf6" accentColor="#8b5cf6" />
+            <MetCard label="Multiple on Invested Capital" value={fmtXx(activeMet.moic)} color="#f59e0b" accentColor="#f59e0b"
               sub={activeMet.total_capex ? `CAPEX: ${fmtM(activeMet.total_capex)}` : undefined} />
           </div>
 
@@ -1001,26 +1023,24 @@ export default function MineProfile4({ mineId, onCreated, onReload, onNavigate, 
       <Section title="Key Assumptions" open={open.assumptions} onToggle={() => toggle("assumptions")}>
         <SubLabel>Reserve &amp; Production</SubLabel>
         <Grid cols={3}>
-          <Inp label="Ore Reserve"       value={ed.ore_reserve}      type="number" onChange={v => set("ore_reserve", v)} />
-          <Inp label="Reserve Unit"      value={ed.reserve_unit}     onChange={v => set("reserve_unit", v)} />
-          <Inp label="Throughput p.a."   value={ed.throughput_pa}    type="number" onChange={v => set("throughput_pa", v)} />
-          <Inp label="Throughput Unit"   value={ed.throughput_unit}  onChange={v => set("throughput_unit", v)} />
+          <Inp label="Ore Reserve"       unit={ed.reserve_unit}    value={ed.ore_reserve}   type="number" required onChange={v => set("ore_reserve", v)} />
+          <Inp label="Throughput p.a."   unit={ed.throughput_unit} value={ed.throughput_pa} type="number" required onChange={v => set("throughput_pa", v)} />
           <Inp label="Life of Mine (yr)" value={ed.life_of_mine_yr}  type="number" required onChange={v => set("life_of_mine_yr", v)} />
         </Grid>
 
         <SubLabel>Financial Parameters</SubLabel>
         <Grid cols={4}>
-          <Inp label="WACC"         value={ed.wacc}              type="number" required onChange={v => set("wacc", v)} />
-          <Inp label="Tax Rate"     value={ed.tax_rate}          type="number" required onChange={v => set("tax_rate", v)} />
-          <Inp label="Royalty Rate" value={ed.royalty_rate}      type="number" required onChange={v => set("royalty_rate", v)} />
-          <Inp label="Closure Cost" value={ed.closure_rehab_cost}type="number"          onChange={v => set("closure_rehab_cost", v)} />
+          <Inp label="WACC"         unit="%" value={ed.wacc        != null && ed.wacc        !== "" ? +parseFloat(ed.wacc        * 100).toFixed(6) : ""} type="number" required onChange={v => set("wacc",        v !== "" ? parseFloat(v) / 100 : "")} />
+          <Inp label="Tax Rate"     unit="%" value={ed.tax_rate    != null && ed.tax_rate    !== "" ? +parseFloat(ed.tax_rate    * 100).toFixed(6) : ""} type="number" required onChange={v => set("tax_rate",    v !== "" ? parseFloat(v) / 100 : "")} />
+          <Inp label="Royalty Rate" unit="%" value={ed.royalty_rate != null && ed.royalty_rate !== "" ? +parseFloat(ed.royalty_rate * 100).toFixed(6) : ""} type="number" required onChange={v => set("royalty_rate", v !== "" ? parseFloat(v) / 100 : "")} />
+          <Inp label="Closure Cost" value={ed.closure_rehab_cost} type="number" onChange={v => set("closure_rehab_cost", v)} />
         </Grid>
 
         <SubLabel>Ramp-Up Schedule</SubLabel>
         <Grid cols={3}>
-          <Inp label="Year 1 (%)" value={ed.ramp_up_y1} type="number" required onChange={v => set("ramp_up_y1", v)} />
-          <Inp label="Year 2 (%)" value={ed.ramp_up_y2} type="number" required onChange={v => set("ramp_up_y2", v)} />
-          <Inp label="Year 3 (%)" value={ed.ramp_up_y3} type="number" required onChange={v => set("ramp_up_y3", v)} />
+          <Inp label="Year 1" unit="%" value={ed.ramp_up_y1 != null && ed.ramp_up_y1 !== "" ? +parseFloat(ed.ramp_up_y1 * 100).toFixed(6) : ""} type="number" required onChange={v => set("ramp_up_y1", v !== "" ? parseFloat(v) / 100 : "")} />
+          <Inp label="Year 2" unit="%" value={ed.ramp_up_y2 != null && ed.ramp_up_y2 !== "" ? +parseFloat(ed.ramp_up_y2 * 100).toFixed(6) : ""} type="number" required onChange={v => set("ramp_up_y2", v !== "" ? parseFloat(v) / 100 : "")} />
+          <Inp label="Year 3" unit="%" value={ed.ramp_up_y3 != null && ed.ramp_up_y3 !== "" ? +parseFloat(ed.ramp_up_y3 * 100).toFixed(6) : ""} type="number" required onChange={v => set("ramp_up_y3", v !== "" ? parseFloat(v) / 100 : "")} />
         </Grid>
       </Section>
 
@@ -1043,7 +1063,8 @@ export default function MineProfile4({ mineId, onCreated, onReload, onNavigate, 
             .map(c => (
               <CommodityCard key={c.id} comm={c} mineId={mineId} onReload={() => { load(); onReload?.(); }}
                 onDeleteComm={(id, label) => setConfirmDel({ type: "commodity", id, label })}
-                onDeleteScen={(id, label) => setConfirmDel({ type: "scenario", id, label })} />
+                onDeleteScen={(id, label) => setConfirmDel({ type: "scenario", id, label })}
+                isAdmin={isAdmin} />
             ))}
         </Section>
       )}
@@ -1122,7 +1143,7 @@ export default function MineProfile4({ mineId, onCreated, onReload, onNavigate, 
                             { label: "NPV",     val: fmtM(met.npv),       color: met.npv >= 0 ? "#10b981" : "#ef4444" },
                             { label: "IRR",     val: fmtPc(met.irr),      color: THEME.primary },
                             { label: "MOIC",    val: fmtXx(met.moic),     color: "#f59e0b" },
-                            { label: "Payback", val: met.payback || "—",  color: "#8b5cf6" },
+                            { label: "Payback", val: met.payback != null ? `${met.payback} yr` : "—", color: "#8b5cf6" },
                           ].map(({ label, val, color }) => (
                             <div key={label} style={{ background: GRAD_BORDER, borderRadius: 10, padding: 1.5 }}>
                             <div style={{ background: "#fff", borderRadius: 8.5,

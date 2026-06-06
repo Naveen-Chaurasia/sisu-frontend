@@ -158,14 +158,14 @@ export default function ExecSummary4({ mineId }) {
       {/* Top KPIs */}
       <Section title="Key Performance Indicators">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
-          <KPICard label="NPV (Base)"   value={fmtM(bestBase?.npv)}    color={THEME.primary}  large />
-          <KPICard label="IRR (Base)"   value={fmtPc(bestBase?.irr)}   color="#10b981"        large />
-          <KPICard label="MOIC"         value={fmtXx(bestBase?.moic)}  color="#f59e0b"        large />
+          <KPICard label="Net Present Value (Base)"        value={fmtM(bestBase?.npv)}   color={THEME.primary}  large />
+          <KPICard label="Internal Rate of Return (Base)" value={fmtPc(bestBase?.irr)}  color="#10b981"        large />
+          <KPICard label="Multiple on Invested Capital"   value={fmtXx(bestBase?.moic)} color="#f59e0b"        large />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-          <KPICard label="Payback"       value={bestBase?.payback != null ? `${bestBase.payback} yr` : "—"}  color="#8b5cf6" />
-          <KPICard label="Life of Mine"  value={mine?.life_of_mine_yr ? `${mine.life_of_mine_yr} yr` : "—"}  color="#06b6d4" />
-          <KPICard label="Total CAPEX"   value={fmtM(bestBase?.total_capex)} color="#ef4444" />
+          <KPICard label="Payback Period"               value={bestBase?.payback != null ? `${bestBase.payback} yr` : "—"} color="#8b5cf6" />
+          <KPICard label="Life of Mine"                 value={mine?.life_of_mine_yr ? `${mine.life_of_mine_yr} yr` : "—"} color="#06b6d4" />
+          <KPICard label="Total Capital Expenditure"    value={fmtM(bestBase?.total_capex)} color="#ef4444" />
         </div>
       </Section>
 

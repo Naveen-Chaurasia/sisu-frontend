@@ -119,15 +119,30 @@ const buildSections = (commodity) => [
 
 const GRAD_BORDER = "linear-gradient(135deg, #1e7093 0%, #2a9bbf 50%, #67c5e0 100%)";
 
-function MetricPill({ label, value, color }) {
+function MetricPill({ label, value, color, tooltip }) {
   const c = color || THEME.primary;
+  const [showTip, setShowTip] = useState(false);
   return (
-    <div style={{ background: GRAD_BORDER, borderRadius: 9, padding: 1.5, flex: 1, minWidth: 100 }}>
+    <div style={{ background: GRAD_BORDER, borderRadius: 9, padding: 1.5, flex: 1, minWidth: 100, position: "relative" }}>
       <div style={{
         background: "#fff", borderRadius: 7.5, padding: "14px 16px",
         boxShadow: "0 2px 12px rgba(30,112,147,0.08)",
       }}>
-        <div style={{ fontSize: 9, fontWeight: 800, color: THEME.muted, letterSpacing: 1.1, textTransform: "uppercase", marginBottom: 5 }}>{label}</div>
+        <div style={{ fontSize: 9, fontWeight: 800, color: THEME.muted, letterSpacing: 1.1, textTransform: "uppercase", marginBottom: 5, display: "flex", alignItems: "center", gap: 5 }}>
+          {label}
+          {tooltip && (
+            <span style={{ position: "relative", display: "inline-flex" }}
+              onMouseEnter={() => setShowTip(true)}
+              onMouseLeave={() => setShowTip(false)}>
+              <span style={{ width: 13, height: 13, borderRadius: "50%", background: "#e2e8f0", border: "1px solid #cbd5e1", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 7.5, fontWeight: 800, color: "#64748b", cursor: "default", lineHeight: 1, flexShrink: 0 }}>i</span>
+              {showTip && (
+                <div style={{ position: "absolute", top: 16, left: 0, zIndex: 200, background: "#0f2d4a", color: "#e0f7fa", fontSize: 11, padding: "5px 10px", borderRadius: 7, whiteSpace: "nowrap", boxShadow: "0 4px 12px rgba(0,0,0,0.3)", fontWeight: 500 }}>
+                  {tooltip}
+                </div>
+              )}
+            </span>
+          )}
+        </div>
         <div style={{ fontSize: 20, fontWeight: 900, color: c, lineHeight: 1 }}>{value}</div>
       </div>
     </div>
@@ -240,7 +255,7 @@ export default function FinancialModel4({ mineId }) {
         const commScens   = scenList
           .filter(s => s.commodity === activeComm)
           .sort((a, b) => {
-            const order = { Single: 0, Base: 0, Bear: 1, Bull: 2 };
+            const order = { Single: 0, Base: 0, Bull: 1, Bear: 2 };
             return (order[a.scenario] ?? 3) - (order[b.scenario] ?? 3);
           });
         const COMM_COLORS = { Gold: "#f59e0b", Graphite: "#10b981", REE: "#3b82f6", Monazite: "#8b5cf6", Spodumene: "#f97316" };
@@ -320,12 +335,12 @@ export default function FinancialModel4({ mineId }) {
       {/* Metric pills */}
       {metrics && (
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
-          <MetricPill label="NPV"     value={fmtM(metrics.npv)}              color={THEME.primary} />
-          <MetricPill label="IRR"     value={fmtPc(metrics.irr)}             color="#10b981" />
-          <MetricPill label="MOIC"    value={metrics.moic ? `${fmt(metrics.moic)}x` : "—"} color="#f59e0b" />
-          <MetricPill label="Payback" value={metrics.payback || "—"}         color="#8b5cf6" />
-          <MetricPill label="Total Capex" value={fmtM(metrics.total_capex)}  color="#ef4444" />
-          <MetricPill label="LOM FCF" value={fmtM(metrics.total_lom_fcf)}    color="#06b6d4" />
+          <MetricPill label="Net Present Value"           value={fmtM(metrics.npv)}                                    color={THEME.primary} />
+          <MetricPill label="Internal Rate of Return"  value={fmtPc(metrics.irr)}                                   color="#10b981" />
+          <MetricPill label="Multiple on Invested Capital" value={metrics.moic ? `${fmt(metrics.moic)}x` : "—"}     color="#f59e0b" />
+          <MetricPill label="Payback Period"           value={metrics.payback != null ? `${metrics.payback} yr` : "—"} color="#8b5cf6" />
+          <MetricPill label="Total Capital Expenditure" value={fmtM(metrics.total_capex)}                           color="#ef4444" />
+          <MetricPill label="LOM Free Cash Flow"       value={fmtM(metrics.total_lom_fcf)}                          color="#06b6d4" />
         </div>
       )}
 

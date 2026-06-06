@@ -8,6 +8,7 @@ import MinesApp4 from "./mines4/MinesApp4";
 import Mines4Landing from "./mines4/Mines4Landing";
 import EmissionLanding from "./EmissionLanding";
 import NationalEmissionIQ from "./NationalEmissionIQ";
+import UserGuide from "./docs/UserGuide";
 
 // ?????? Constants ????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 const G = "linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%)";
@@ -25,12 +26,46 @@ const GAS_UNITS = {
 };
 
 // ?????? Auth ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
+function LegalNoticeModal({ onClose }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 3000, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background: "#fff", borderRadius: 14, width: "100%", maxWidth: 820, maxHeight: "85vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 60px rgba(0,0,0,0.35)", overflow: "hidden" }}
+        onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{ background: G, padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <span style={{ fontSize: 14, fontWeight: 800, color: "#fff", letterSpacing: 1.5, textTransform: "uppercase" }}>Legal Notice</span>
+          <button onClick={onClose} style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 7, color: "#fff", width: 30, height: 30, cursor: "pointer", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+        </div>
+        {/* Body */}
+        <div style={{ overflowY: "auto", padding: "24px 28px", fontSize: 13.5, color: "#374151", lineHeight: 1.8 }}>
+          <p>During the Subscription Term with the client, we will provide Users access to use the Subscription Service as described in the Software License Agreement and the applicable Order with the customer. You must ensure that all access, use and receipt by your Users is subject to and in compliance with the Software License Agreement. The Limits to Access to Bahari Sustain360 are contained in the Software License Agreement.</p>
+          <p style={{ marginTop: 16 }}><strong style={{ color: "#1e7093" }}>Modifications.</strong><br />We modify the Subscription Service from time to time, including by adding or deleting features and functions, in an effort to improve your experience. Customer Support and terms are as per the Software License Agreement.</p>
+          <p style={{ marginTop: 16 }}><strong style={{ color: "#1e7093" }}>Prohibited and Unauthorized Use.</strong><br />You will not use the Bahari Sustain360 Subscription Service in any way that violates the terms of the Software License Agreement or for any purpose or in any manner that is unlawful or prohibited by the Software License Agreement.</p>
+          <p style={{ marginTop: 12 }}>You may not use the Subscription Service if you are legally prohibited from receiving or using the Bahari Sustain360 Subscription Service under the US laws for software distribution or the laws of the country in which you are resident or from which you access or use the Bahari Sustain360 Subscription Service.</p>
+          <p style={{ marginTop: 12 }}>You will notify us promptly of any unauthorized use of your users' identifications and passwords or your account to <a href="mailto:Info@Bahari.ai" style={{ color: "#1e7093" }}>Info@Bahari.ai</a>.</p>
+          <p style={{ marginTop: 16 }}><strong style={{ color: "#1e7093" }}>No Sensitive Information.</strong><br />YOU ACKNOWLEDGE THAT THE SUSTAIN360 SUBSCRIPTION SERVICES HAVE NOT BEEN DESIGNED TO PROCESS OR MANAGE SENSITIVE INFORMATION AND ACCORDINGLY YOU AGREE NOT TO USE THE SUBSCRIPTION SERVICE TO COLLECT, MANAGE OR PROCESS SENSITIVE INFORMATION. WE WILL NOT HAVE AND WE SPECIFICALLY DISCLAIM ANY LIABILITY THAT MAY RESULT FROM YOUR USE OF THE SUBSCRIPTION SERVICE TO COLLECT, PROCESS OR MANAGE SENSITIVE INFORMATION.</p>
+          <p style={{ marginTop: 16 }}><strong style={{ color: "#1e7093" }}>Term and Renewal.</strong><br />Your initial subscription term will be specified in your Software License Agreement, Order Form, and, unless otherwise specified in your Order, your subscription will automatically renew each year for one year.</p>
+          <p style={{ marginTop: 12 }}>We may suspend any User's access to any or all Bahari Sustain360 Subscription Services without notice for use of the Subscription Service in a way that violates applicable US or local country state, federal, or foreign laws or regulations or the terms of Software License Agreement.</p>
+          <p style={{ marginTop: 12 }}>Bahari Analytics Inc and our software platform Sustain360 is licensed to embed Ecoinvent v3.11 as a LCA data provider.</p>
+          <p style={{ marginTop: 16 }}><strong style={{ color: "#1e7093" }}>Customer Data.</strong><br />Customer's Proprietary Rights. You own and retain all rights to the Customer Materials and Customer Data. This Agreement does not grant us any ownership rights to Customer Materials or Customer Data. All Data is hosted and managed within your Cloud VPC or private data center, we do not hold or process any of your customer data. The Software License Agreement provides for access to and use of the Sustain360 Subscription Service, and you are not granted a license to any software by the Software License Agreement. We retain all intellectual property rights to Bahari Sustain360 software, subscription services under the Software License Agreement. You agree not to copy, rent, lease, sell, distribute or create any derivative works based on the Bahari Sustain360 software. Our Intellectual Property and trademarks are stated in the Software License Agreement under Bahari, Bahari Analytics, Sustain360 and Bahari Sustain360. You may not use any of these without our prior written permission.</p>
+        </div>
+        {/* Footer */}
+        <div style={{ padding: "12px 24px", borderTop: "1px solid #e2e8f0", fontSize: 11.5, color: "#94a3b8", textAlign: "center", flexShrink: 0 }}>
+          &copy; Powered by Bahari. All rights reserved.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Login({ onLogin }) {
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [error, setError]       = useState("");
   const [showPw, setShowPw]     = useState(false);
   const [loading, setLoading]   = useState(false);
+  const [showLegal, setShowLegal] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -185,20 +220,24 @@ function Login({ onLogin }) {
             </button>
           </form>
 
-          {/* Footer */}
-          <div style={{ textAlign: "center", marginTop: 24, fontSize: 11.5, color: "#94a3b8" }}>
-            Powered by <strong>Sustain360.ai</strong> � GHG Protocol aligned � ISO 14083
+          {/* Legal Notice + Version — inside card */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 20, fontSize: 11, color: "#94a3b8" }}>
+            <span>Version 26.01.02</span>
+            <button
+              onClick={() => setShowLegal(true)}
+              style={{ background: "none", border: "none", color: "#1e7093", fontSize: 11, cursor: "pointer", textDecoration: "underline", fontFamily: "inherit", padding: 0, fontWeight: 600 }}
+            >Legal Notice</button>
           </div>
         </div>
       </div>
 
-      {/* Bottom-right copyright */}
-      <div style={{
-        position: "fixed", bottom: 16, right: 20,
-        fontSize: 11, color: "#94a3b8",
-      }}>
-        � {new Date().getFullYear()} Sustain360.ai � All rights reserved
+
+      {/* Copyright — below the login box */}
+      <div style={{ textAlign: "center", marginTop: 14, fontSize: 11, color: "#94a3b8" }}>
+        &copy; Sustain360, ALL RIGHTS RESERVED.
       </div>
+
+      {showLegal && <LegalNoticeModal onClose={() => setShowLegal(false)} />}
     </div>
   );
 }
@@ -207,19 +246,12 @@ function Login({ onLogin }) {
 const COUNTRY_LABELS = { costa_rica: "Costa Rica", mexico: "Mexico", ethiopia: "Ethiopia", mexico_llm: "Mexico" };
 
 function Welcome({ user, onSelect, onLogout, onBack, country }) {
+  const [showGuide, setShowGuide] = useState(false);
   const NAV = (
     <div style={{ background: G, padding: "0 32px", display: "flex", alignItems: "center", height: 58, boxShadow: "0 2px 12px rgba(26,101,133,0.3)" }}>
-      {/* Left: Logo + Projects button */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      {/* Left: Logo */}
+      <div style={{ display: "flex", alignItems: "center" }}>
         <img src="https://static.wixstatic.com/media/15f61d_291a4247c1f049ad951ee1be7efbb7b8~mv2.png/v1/fill/w_182,h_31,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Sustain360%20Logo%20-%20Blue.png" alt="Sustain360" onClick={onBack} style={{ height: 28, objectFit: "contain", filter: "brightness(0) invert(1) opacity(0.9)", cursor: "pointer" }} />
-        <div style={{ width: 1, height: 22, background: "rgba(255,255,255,0.2)" }} />
-        <button onClick={onBack} style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, color: "#e0f7fa", fontSize: 12, fontWeight: 600, padding: "5px 14px", cursor: "pointer", fontFamily: "inherit" }}
-          onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.22)"}
-          onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.12)"}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-          Projects
-        </button>
       </div>
       {/* Right: user avatar + sign out */}
       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
@@ -282,11 +314,57 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
   return (
     <div style={{ minHeight: "100vh", fontFamily: "inherit" }}>
       {NAV}
+      {showGuide && <UserGuide onClose={() => setShowGuide(false)} />}
 
-      {/* ?????? Hero (full page) ?????? */}
+      {/* Body: sidebar + main */}
+      <div style={{ display: "flex", minHeight: "calc(100vh - 58px)" }}>
+
+        {/* Sidebar */}
+        <div style={{
+          width: 200, flexShrink: 0,
+          background: "linear-gradient(180deg, #0a1e30 0%, #0f2d4a 40%, #1a4a72 100%)",
+          display: "flex", flexDirection: "column",
+          borderRight: "1px solid rgba(255,255,255,0.08)",
+        }}>
+          <nav style={{ padding: "14px 8px", flex: 1 }}>
+            <button onClick={onBack}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.07)"; e.currentTarget.style.color = "rgba(255,255,255,0.85)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.55)"; }}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 8,
+                padding: "9px 12px", borderRadius: 8,
+                background: "transparent", border: "1px solid rgba(255,255,255,0.1)",
+                color: "rgba(255,255,255,0.55)", fontSize: 13, fontWeight: 500,
+                cursor: "pointer", textAlign: "left", fontFamily: "inherit", transition: "all 0.15s",
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              Projects
+            </button>
+            <button onClick={() => setShowGuide(true)}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.07)"; e.currentTarget.style.color = "rgba(255,255,255,0.85)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "rgba(255,255,255,0.55)"; }}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 8,
+                padding: "9px 12px", borderRadius: 8, marginTop: 4,
+                background: "transparent", border: "1px solid transparent",
+                color: "rgba(255,255,255,0.55)", fontSize: 13, fontWeight: 500,
+                cursor: "pointer", textAlign: "left", fontFamily: "inherit", transition: "all 0.15s",
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              User Guide
+            </button>
+          </nav>
+          <div style={{ padding: "12px 20px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 10, color: "rgba(255,255,255,0.3)" }}>
+            &copy; Sustain360
+          </div>
+        </div>
+
+      {/* Main content */}
       <div style={{
+        flex: 1,
         background: "#ffffff",
-        minHeight: "calc(100vh - 56px)",
         padding: "20px 32px 32px",
         textAlign: "center",
         position: "relative",
@@ -457,21 +535,24 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
 
           {/* Footer note */}
           <div style={{ marginTop: 36, fontSize: 11.5, color: "rgba(15,45,74,0.4)" }}>
-            Powered by <strong style={{ color: "#1e7093" }}>Sustain360.ai</strong> � GHG Protocol aligned � ISO 14083
+            Powered by <strong style={{ color: "#1e7093" }}>Sustain360.ai</strong>
           </div>
         </div>
       </div>
+      </div> {/* end sidebar+main */}
     </div>
   );
 }
 
 // ?????? Project Selector ???????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
 function ProjectSelector({ user, onSelect, onLogout }) {
+  const [infoHover, setInfoHover] = useState(null);
+
   const PROJECTS = [
     {
       id: "emission",
       title: "National Emission Modeling",
-      desc: "Design, simulate, and evaluate national transport and multi-sector decarbonization strategies. Includes parametric and conversational policy modeling powered by SISEPUEDE.",
+      desc: "Design, simulate, and evaluate national transport and multi-sector decarbonization strategies sourced by SISEPUEDE.",
       badge: "Climate & Policy",
       icon: (
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
@@ -515,99 +596,107 @@ function ProjectSelector({ user, onSelect, onLogout }) {
         </div>
       </div>
 
-      {/* Hero */}
-      <div style={{
-        background: "linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%)",
-        minHeight: "calc(100vh - 58px)",
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        padding: "40px 32px", textAlign: "center", position: "relative", overflow: "hidden",
-      }}>
-        {/* Rings */}
-        <div style={{ position: "absolute", top: -80, right: -80, width: 360, height: 360, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.05)", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", bottom: -100, left: -60, width: 320, height: 320, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.04)", pointerEvents: "none" }} />
+      {/* Page — split: top 30% header, bottom 70% cards */}
+      <div style={{ minHeight: "calc(100vh - 58px)", background: "#f1f5f9", display: "flex", flexDirection: "column" }}>
 
-        <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 780 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "rgba(103,197,224,0.8)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 14 }}>
-            Welcome back, {user}
+        {/* Top 30% — header */}
+        <div style={{
+          height: "30vh", background: "linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%)",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+          textAlign: "center", position: "relative", overflow: "hidden", flexShrink: 0,
+        }}>
+          <div style={{ position: "absolute", top: -60, right: -60, width: 280, height: 280, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.05)", pointerEvents: "none" }} />
+          <div style={{ position: "absolute", bottom: -60, left: -40, width: 220, height: 220, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.04)", pointerEvents: "none" }} />
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(103,197,224,0.8)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 10 }}>
+              Welcome back, {user}
+            </div>
+            <h1 style={{ fontSize: 34, fontWeight: 900, color: "#fff", margin: "0 0 10px", letterSpacing: -0.8, lineHeight: 1.15 }}>
+              Decision Intelligence
+            </h1>
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", lineHeight: 1.6, margin: 0 }}>
+              Choose a modeling module to begin your analysis session.
+            </p>
           </div>
-          <h1 style={{ fontSize: 38, fontWeight: 900, color: "#fff", margin: "0 0 12px", letterSpacing: -0.8, lineHeight: 1.15 }}>
-            Select a Project
-          </h1>
-          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.55)", lineHeight: 1.75, maxWidth: 460, margin: "0 auto 44px" }}>
-            Choose a modeling module to begin your analysis session.
-          </p>
+        </div>
+
+        {/* Bottom 70% — cards */}
+        <div style={{ flex: 1, display: "flex", alignItems: "flex-start", justifyContent: "flex-start", padding: "20px 32px" }}>
 
           <style>{`
-            @keyframes proj-border-spin {
-              0%   { background-position: 0%   50%; }
-              50%  { background-position: 100% 50%; }
-              100% { background-position: 0%   50%; }
-            }
-            @keyframes proj-shine {
-              0%   { left: -60%; opacity: 0; }
-              20%  { opacity: 1; }
-              80%  { opacity: 1; }
-              100% { left: 120%; opacity: 0; }
-            }
             .proj-border-wrap {
               position: relative;
-              border-radius: 20px;
-              padding: 2.5px;
-              background: linear-gradient(270deg, #67c5e0, #1e7093, #34d399, #a78bfa, #67c5e0);
-              background-size: 400% 400%;
-              animation: proj-border-spin 4s ease infinite;
-              box-shadow: 0 4px 24px rgba(0,0,0,0.18), 0 0 30px rgba(103,197,224,0.15);
+              border-radius: 16px;
+              background: linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%);
               cursor: pointer;
               transition: transform 0.2s, box-shadow 0.2s;
+              box-shadow: 0 4px 20px rgba(11,31,53,0.3);
+              border: 1px solid rgba(103,197,224,0.15);
             }
             .proj-border-wrap:hover {
-              transform: translateY(-6px);
-              box-shadow: 0 20px 50px rgba(0,0,0,0.28), 0 0 40px rgba(103,197,224,0.25);
+              transform: translateY(-5px);
+              box-shadow: 0 16px 40px rgba(11,31,53,0.45);
+              border-color: rgba(103,197,224,0.4);
             }
             .proj-card-inner {
-              background: rgba(255,255,255,0.93);
-              border-radius: 18px;
-              padding: 30px 26px;
+              background: transparent;
+              border-radius: 16px;
+              padding: 28px 24px;
               display: flex; flex-direction: column; align-items: flex-start; gap: 14px;
               text-align: left;
               position: relative; overflow: hidden;
               height: 100%;
               box-sizing: border-box;
-              transition: background 0.2s;
-            }
-            .proj-border-wrap:hover .proj-card-inner {
-              background: #fff;
-            }
-            .proj-card-inner::after {
-              content: '';
-              position: absolute;
-              top: 0; bottom: 0; left: -60%;
-              width: 35%;
-              background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0) 100%);
-              transform: skewX(-15deg);
-              animation: proj-shine 4s ease-in-out infinite;
-              pointer-events: none;
             }
           `}</style>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, maxWidth: 720, margin: "0 auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, maxWidth: 900, width: "100%" }}>
             {PROJECTS.map(p => (
               <div key={p.id} className="proj-border-wrap"
                 onClick={() => onSelect(p.id === "investment" ? "mines4" : p.id)}
               >
-                <div className="proj-card-inner">
-                  <div style={{ width: 52, height: 52, borderRadius: 14, background: `${p.color}18`, border: `1px solid ${p.color}30`, display: "flex", alignItems: "center", justifyContent: "center", color: p.color }}>
+                <div className="proj-card-inner" style={p.id === "emission" ? {
+                  backgroundImage: `linear-gradient(rgba(11,31,53,0.78), rgba(11,31,53,0.78)), url("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQq8mIl57PjqXdoO5mtWR93yPhz8tyVPU32DA&s")`,
+                  backgroundSize: "cover", backgroundPosition: "center",
+                } : p.id === "investment" ? {
+                  backgroundImage: `linear-gradient(rgba(11,31,53,0.78), rgba(11,31,53,0.78)), url("https://www.azomining.com/images/Article_Images/ImageForArticle_1789_17073180275129745.jpg")`,
+                  backgroundSize: "cover", backgroundPosition: "center",
+                } : {}}>
+                  {/* ⓘ info button top-right */}
+                  <div
+                    style={{ position: "absolute", top: 14, right: 14, zIndex: 10 }}
+                    onMouseEnter={() => setInfoHover(p.id)}
+                    onMouseLeave={() => setInfoHover(null)}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <div style={{
+                      width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                      background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.6)", color: "#fff",
+                      fontSize: 12, fontWeight: 800, cursor: "default", userSelect: "none",
+                    }}>i</div>
+                    {infoHover === p.id && (
+                      <div style={{
+                        position: "absolute", top: 28, right: 0, width: 220,
+                        background: "#0f2d4a", color: "rgba(255,255,255,0.85)",
+                        fontSize: 12, lineHeight: 1.65, padding: "10px 14px",
+                        borderRadius: 10, boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
+                        zIndex: 100,
+                      }}>
+                        {p.desc}
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ width: 52, height: 52, borderRadius: 14, background: `${p.color}18`, border: `1px solid ${p.color}30`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
                     {p.icon}
                   </div>
                   <div>
-                    <div style={{ fontSize: 17, fontWeight: 800, color: "#0f172a", marginBottom: 8 }}>{p.title}</div>
-                    <div style={{ fontSize: 13, color: "#64748b", lineHeight: 1.65 }}>{p.desc}</div>
+                    <div style={{ fontSize: 17, fontWeight: 800, color: "#fff", marginBottom: 4 }}>{p.title}</div>
                   </div>
-                  <div style={{ fontSize: 10.5, fontWeight: 700, color: p.color, background: `${p.color}14`, borderRadius: 20, padding: "3px 12px" }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 700, color: "#fff", background: "rgba(255,255,255,0.15)", borderRadius: 20, padding: "3px 12px" }}>
                     {p.badge}
                   </div>
-
-                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 700, color: p.color, marginTop: 2 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 700, color: "#67c5e0", marginTop: 2 }}>
                     Open Project
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -618,10 +707,11 @@ function ProjectSelector({ user, onSelect, onLogout }) {
             ))}
           </div>
 
-          <div style={{ marginTop: 48, fontSize: 11, color: "rgba(255,255,255,0.7)" }}>
-            Powered by <strong style={{ color: "#fff" }}>Sustain360.ai</strong>
-          </div>
         </div>
+      </div>
+      {/* Copyright fixed bottom-right */}
+      <div style={{ position: "fixed", bottom: 14, right: 20, fontSize: 11, color: "#94a3b8", pointerEvents: "none" }}>
+        &copy; Sustain360, All Rights Reserved.
       </div>
     </div>
   );

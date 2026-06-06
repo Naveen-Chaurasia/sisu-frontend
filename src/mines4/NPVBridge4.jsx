@@ -26,7 +26,7 @@ function fmtPct(v, total) {
   return `${((Math.abs(v) / Math.abs(total)) * 100).toFixed(1)}%`;
 }
 
-const SCEN_ORDER  = { Bear: 0, Single: 1, Base: 2, Bull: 3 };
+const SCEN_ORDER  = { Single: 0, Base: 1, Bull: 2, Bear: 3 };
 const SCEN_COLORS = { Bear: "#ef4444", Base: "#1e7093", Bull: "#10b981", Single: "#6366f1" };
 const SCEN_LABELS = { Bear: "Bear", Base: "Base", Bull: "Bull", Single: "Base" };
 

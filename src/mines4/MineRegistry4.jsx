@@ -68,10 +68,10 @@ const COL_DEFS = [
   { key: "province",       label: "Province",    align: "left"  },
   { key: "_commodities",   label: "Commodities", align: "left"  },
   { key: "life_of_mine_yr",label: "LOM",         align: "right", numeric: true, fmt: v => v != null ? `${v} yr` : "—" },
-  { key: "npv",            label: "NPV ($M)",    align: "right", numeric: true, fmt: fmtM  },
-  { key: "irr",            label: "IRR",         align: "right", numeric: true, fmt: fmtPc },
-  { key: "moic",           label: "MOIC",        align: "right", numeric: true, fmt: fmtXx },
-  { key: "payback",        label: "Payback",     align: "right", numeric: true, fmt: v => v || "—" },
+  { key: "npv",            label: "Net Present Value ($M)",       align: "right", numeric: true, fmt: fmtM  },
+  { key: "irr",            label: "Internal Rate of Return",      align: "right", numeric: true, fmt: fmtPc },
+  { key: "moic",           label: "Multiple on Invested Capital", align: "right", numeric: true, fmt: fmtXx },
+  { key: "payback",        label: "Payback Period",               align: "right", numeric: true, fmt: v => v || "—" },
 ];
 
 export default function MineRegistry4({ mines = [], onSelectMine }) {
@@ -278,7 +278,7 @@ export default function MineRegistry4({ mines = [], onSelectMine }) {
             {/* 1. Risk/Return Scatter */}
             <div style={card}>
               <div style={cardTitle}>Risk / Return Map</div>
-              <div style={cardSub}>NPV ($M) vs IRR (%) — combined model metrics</div>
+              <div style={cardSub}>Net Present Value ($M) vs Internal Rate of Return (%) — combined model metrics</div>
               <ResponsiveContainer width="100%" height={300}>
                 <ScatterChart margin={{ top: 16, right: 24, bottom: 36, left: 16 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -310,8 +310,8 @@ export default function MineRegistry4({ mines = [], onSelectMine }) {
 
             {/* 2. NPV Horizontal Bar */}
             <div style={card}>
-              <div style={cardTitle}>Portfolio Allocation by NPV</div>
-              <div style={cardSub}>Sorted by NPV · color = IRR tier (green=high, orange=mid/low)</div>
+              <div style={cardTitle}>Portfolio Allocation by Net Present Value</div>
+              <div style={cardSub}>Sorted by Net Present Value · color = Internal Rate of Return tier (green=high, orange=mid/low)</div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart layout="vertical" data={npvBar}
                   margin={{ top: 4, right: 70, bottom: 28, left: 4 }} barCategoryGap="32%">
@@ -371,7 +371,7 @@ export default function MineRegistry4({ mines = [], onSelectMine }) {
             {/* 4. MOIC Bullet */}
             {moicData.length > 0 && (
               <div style={card}>
-                <div style={cardTitle}>MOIC — Return Multiple</div>
+                <div style={cardTitle}>Multiple on Invested Capital — Return Multiple</div>
                 <div style={cardSub}>Bands: Poor / Moderate / Good / Strong / Excellent · red line = 3× hurdle</div>
                 {(() => {
                   const CHART_H = 240;
