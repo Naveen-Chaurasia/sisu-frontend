@@ -104,9 +104,7 @@ export default function MineRegistry4({ mines = [], onSelectMine }) {
       {/* Header */}
       <div style={{ marginBottom: 28, textAlign: "center" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 4 }}>
-          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: THEME.primaryDark }}>Mine Registry</h2>
-          <div style={{ width: 1, height: 20, background: THEME.border }} />
-          <span style={{ fontSize: 16, fontWeight: 700, color: THEME.primary }}>Portfolio Analytics</span>
+          <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: THEME.primaryDark }}>Mines Portfolio</h2>
         </div>
         <p style={{ margin: 0, fontSize: 13, color: THEME.muted }}>
           Mozambique critical minerals portfolio · {mines.length} asset{mines.length !== 1 ? "s" : ""}
