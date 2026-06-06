@@ -226,7 +226,7 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
 
   // Simulation tab — sector / policy lifted here so they sit in the top bar
   const [simSectors,    setSimSectors]    = useState([]);
-  const [simSector,     setSimSector]     = useState("energy");
+  const [simSector,     setSimSector]     = useState("industrial");
   const [simPolicies,   setSimPolicies]   = useState([]);
   const [simPolicyId,   setSimPolicyId]   = useState("");
   const [simPolLoading, setSimPolLoading] = useState(false);
@@ -258,7 +258,7 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
     setSimPolicyId("");
     fetchSectorPolicies(simSector)
       .then(d => {
-        const pols = d.policies || [];
+        const pols = (d.policies || []).slice().sort((a, b) => (b.magnitude || 0) - (a.magnitude || 0));
         setSimPolicies(pols);
         if (pols.length > 0) setSimPolicyId(pols[0].id);
       })
@@ -654,7 +654,7 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
 
           {/* Original white-card controls bar */}
           {pageTab !== "ardhi" && (
-            <div style={{ background: "#fff", borderBottom: "1px solid #e2e8f0", padding: "10px 20px 10px 56px", display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap", flexShrink: 0 }}>
+            <div style={{ background: "#fff", borderBottom: "1px solid #e2e8f0", padding: "10px 20px 10px 56px", display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap", flexShrink: 0, position: "sticky", top: 0, zIndex: 50 }}>
 
               {/* GHG */}
               <div style={cardStyle}>
@@ -785,7 +785,7 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
         }}>
           <div onClick={e => e.stopPropagation()} style={{
             background: "linear-gradient(175deg, #f0f7ff 0%, #ffffff 40%, #fafbfc 100%)",
-            borderRadius: 20, width: "100%", maxWidth: "calc(100% - 48px)",
+            borderRadius: 20, width: "100%", maxWidth: 820,
             maxHeight: "88vh", overflowY: "auto", fontFamily: "inherit",
             boxShadow: "0 40px 100px rgba(11,31,53,0.45), 0 0 0 1px rgba(30,112,147,0.12), inset 0 1px 0 rgba(255,255,255,0.9)",
           }}>
@@ -854,40 +854,80 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
               {!snapshotLoading && snapshotRows && snapshotRows.length > 0 && (
                 <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #e8f0f7", boxShadow: "0 2px 16px rgba(30,112,147,0.07)", overflow: "hidden" }}>
 
-                  {/* Ranked rows */}
-                  <div style={{ padding: "4px 20px 12px" }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: "#94a3b8", letterSpacing: 1, padding: "14px 0 8px", textTransform: "uppercase" }}>
-                      Top Contributors
-                    </div>
-                    {snapshotRows.map((row, i) => {
-                      const fmtVal = row.value >= 1e6 ? `${(row.value/1e6).toFixed(2)}M` : row.value >= 1e3 ? `${(row.value/1e3).toFixed(1)}K` : row.value.toFixed(1);
-                      return (
-                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0", borderBottom: i < 7 ? "1px solid #f8fafc" : "none" }}>
-                          <div style={{
-                            width: 24, height: 24, borderRadius: 7, flexShrink: 0,
-                            background: i === 0 ? "linear-gradient(135deg,#f59e0b,#d97706)" : i === 1 ? "linear-gradient(135deg,#94a3b8,#64748b)" : i === 2 ? "linear-gradient(135deg,#cd7c3a,#b45309)" : "#f1f5f9",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: 10.5, fontWeight: 800, color: i < 3 ? "#fff" : "#64748b",
-                          }}>{i + 1}</div>
-
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                                <span style={{ width: 8, height: 8, borderRadius: 2, background: row.color, flexShrink: 0 }} />
-                                <span style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</span>
-                                <span style={{ fontSize: 10, fontWeight: 700, color: row.color, background: row.color + "15", borderRadius: 20, padding: "1px 7px", flexShrink: 0, border: `1px solid ${row.color}25` }}>
-                                  {row.sector.charAt(0).toUpperCase() + row.sector.slice(1)}
+                  {/* Heatmap Table */}
+                  <div style={{ overflow: "hidden" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: "linear-gradient(135deg, #0f2d4a 0%, #1e4976 100%)" }}>
+                          {["#", "Sector", "Category", "", "Emissions (t CO₂)", "Share", ""].map((h, idx) => (
+                            <th key={idx} style={{ padding: "10px 14px", textAlign: idx >= 4 ? "right" : "left", color: "rgba(255,255,255,0.8)", fontWeight: 600, fontSize: 11, whiteSpace: "nowrap", letterSpacing: 0.4 }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {snapshotRows.map((row, i) => {
+                          const parts = row.name.split("·").map(s => s.trim());
+                          const sectorLabel = parts[0] || row.sector;
+                          const categoryLabel = parts.slice(1).join(" · ") || row.name;
+                          const fmtVal = row.value >= 1e6 ? `${(row.value/1e6).toFixed(2)}M` : row.value >= 1e3 ? `${(row.value/1e3).toFixed(1)}K` : row.value.toFixed(1);
+                          const pct = parseFloat(row.pct) || 0;
+                          // Single coral tone: dark (high) → light (low)
+                          const n = snapshotRows.length - 1 || 1;
+                          const t = i / n; // 0 = top → 1 = bottom
+                          const r = Math.round(214 + t * 38);
+                          const g = Math.round(90  + t * 120);
+                          const b = Math.round(88  + t * 110);
+                          const heatBg = `rgb(${r},${g},${b})`;
+                          const textColor = t > 0.55 ? "#7c3040" : "#fff";
+                          return (
+                            <tr key={i} style={{ borderBottom: "1px solid rgba(0,0,0,0.04)", transition: "filter 0.15s" }}>
+                              <td style={{ padding: "10px 14px", color: "#94a3b8", fontWeight: 800, fontSize: 11, background: "#f8fafc" }}>{i + 1}</td>
+                              <td style={{ padding: "10px 14px", background: "#f8fafc" }}>
+                                <span style={{ fontSize: 11, fontWeight: 700, color: row.color, background: row.color + "15", borderRadius: 20, padding: "3px 10px", border: `1px solid ${row.color}30`, whiteSpace: "nowrap" }}>
+                                  {sectorLabel}
                                 </span>
-                              </div>
-                              <span style={{ fontSize: 11.5, fontWeight: 700, color: "#475569", flexShrink: 0, marginLeft: 8 }}>{fmtVal} t · <strong style={{ color: row.color }}>{row.pct}%</strong></span>
-                            </div>
-                            <div style={{ height: 6, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
-                              <div style={{ height: "100%", width: `${row.pct}%`, borderRadius: 99, background: `linear-gradient(90deg,${row.color}99,${row.color})`, transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)" }} />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                              </td>
+                              <td style={{ padding: "10px 14px", color: "#334155", fontWeight: 500, background: "#f8fafc" }}>{categoryLabel}</td>
+                              {/* Mini bar */}
+                              <td style={{ padding: "10px 10px", background: "#f8fafc", width: 80, minWidth: 60 }}>
+                                <div style={{ background: "#e2e8f0", borderRadius: 99, height: 6, overflow: "hidden" }}>
+                                  <div style={{
+                                    height: "100%", borderRadius: 99,
+                                    width: `${pct}%`,
+                                    background: heatBg,
+                                    transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)",
+                                  }} />
+                                </div>
+                              </td>
+                              <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap", background: "#f8fafc" }}>{fmtVal}</td>
+                              <td style={{ padding: "10px 14px", textAlign: "right", background: "#f8fafc" }}>
+                                <span style={{ fontWeight: 700, color: row.color }}>{row.pct}%</span>
+                              </td>
+                              {/* Heat cell */}
+                              <td style={{ padding: 0, width: 120 }}>
+                                <div style={{
+                                  background: heatBg,
+                                  height: "100%", minHeight: 42,
+                                  display: "flex", alignItems: "center", justifyContent: "flex-end",
+                                  padding: "0 14px",
+                                  fontWeight: 800, fontSize: 12,
+                                  color: textColor,
+                                  transition: "background 0.3s",
+                                }}>
+                                  {pct > 0 ? `${row.pct}%` : "—"}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                    {/* Heat legend */}
+                    <div style={{ padding: "10px 16px", background: "#f8fafc", borderTop: "1px solid #e2e8f0", display: "flex", alignItems: "center", gap: 8, fontSize: 10, color: "#94a3b8", fontWeight: 600 }}>
+                      <span>LOW</span>
+                      <div style={{ flex: 1, height: 6, borderRadius: 99, background: "linear-gradient(90deg, rgb(252,210,198), rgb(232,140,128), rgb(214,90,88))" }} />
+                      <span>HIGH</span>
+                    </div>
                   </div>
                 </div>
               )}
