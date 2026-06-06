@@ -562,7 +562,7 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
               {TABS.map(t => {
                 const active = pageTab === t.id;
                 return (
-                  <button key={t.id} onClick={() => setPageTab(t.id)} style={{
+                  <button key={t.id} onClick={() => { setPageTab(t.id); setSnapshotOpen(false); setSankeyOpen(false); }} style={{
                     width: "100%", display: "flex", alignItems: "center", gap: 10,
                     padding: "9px 12px", borderRadius: 9, marginBottom: 2,
                     background: active ? "rgba(103,197,224,0.18)" : "transparent",
@@ -580,7 +580,7 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
               {/* Hotspot + Emission Flow — always visible */}
               <>
                 <button
-                    onClick={openSnapshot}
+                    onClick={() => { setSankeyOpen(false); openSnapshot(); }}
                     style={{
                       width: "100%", display: "flex", alignItems: "center", gap: 10,
                       padding: "9px 12px", borderRadius: 9, marginTop: 8,
@@ -600,7 +600,7 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
                   </button>
 
                   <button
-                    onClick={openSankey}
+                    onClick={() => { setSnapshotOpen(false); openSankey(); }}
                     style={{
                       width: "100%", display: "flex", alignItems: "center", gap: 10,
                       padding: "9px 12px", borderRadius: 9, marginTop: 4,
