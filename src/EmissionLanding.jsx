@@ -35,6 +35,7 @@ const COUNTRIES = [
     region: "North America",
     desc:   "LLM-augmented analysis layer on Mexico's emission baseline. AI-driven policy recommendations and scenario generation.",
     color:  "#8b5cf6",
+    hidden: true,   // set to false to show this card again
   },
 ];
 
@@ -126,7 +127,7 @@ export default function EmissionLanding({ user, onSelectCountry, onBack, onLogou
 
           {/* Country cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20, maxWidth: 1360, margin: "0 auto", padding: "0 32px 60px" }}>
-            {COUNTRIES.map(c => (
+            {COUNTRIES.filter(c => !c.hidden).map(c => (
               <div
                 key={c.id}
                 onClick={() => onSelectCountry(c.id)}
