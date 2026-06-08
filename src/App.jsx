@@ -380,15 +380,15 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
 
         {/* Country hero */}
         {country && (
-          <div style={{ marginBottom: 36, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+          <div style={{ marginBottom: 36, display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
+            <h1 style={{ fontSize: 32, fontWeight: 900, color: "#fff", margin: 0, letterSpacing: -0.5, lineHeight: 1.1 }}>
+              {COUNTRY_LABELS[country]}
+            </h1>
             <img
               src={`https://flagcdn.com/w80/${country === "costa_rica" ? "cr" : country === "ethiopia" ? "et" : "mx"}.png`}
               alt={COUNTRY_LABELS[country]}
-              style={{ height: 48, borderRadius: 6, boxShadow: "0 4px 16px rgba(0,0,0,0.35)" }}
+              style={{ height: 34, borderRadius: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.35)" }}
             />
-            <h1 style={{ fontSize: 44, fontWeight: 900, color: "#fff", margin: 0, letterSpacing: -1, lineHeight: 1.1 }}>
-              {COUNTRY_LABELS[country]}
-            </h1>
           </div>
         )}
 
