@@ -116,9 +116,6 @@ export default function EmissionLanding({ user, onSelectCountry, onBack, onLogou
         <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
           {/* Hero */}
           <div style={{ textAlign: "center", padding: "56px 32px 40px" }}>
-            <div style={{ display: "inline-block", background: "rgba(30,112,147,0.1)", border: "1px solid rgba(30,112,147,0.25)", borderRadius: 20, padding: "4px 16px", fontSize: 11, fontWeight: 700, color: "#1e7093", letterSpacing: 1.2, marginBottom: 18 }}>
-              NATIONAL EMISSION MODELING
-            </div>
             <h1 style={{ fontSize: 40, fontWeight: 900, color: "#0f2d4a", margin: "0 0 14px", letterSpacing: -0.8, lineHeight: 1.15 }}>
               National Emission <span style={{ color: "#1e7093" }}>Modeling</span>
             </h1>

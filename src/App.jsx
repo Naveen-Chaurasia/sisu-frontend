@@ -291,7 +291,7 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
         </svg>
       ),
       title: "Conversational Modeling",
-      desc: "Describe a decarbonization policy in plain English. Sustain360 AI interprets your intent, maps it to SISEPUEDE parameters, and runs the simulation automatically with no technical setup required.",
+      desc: "Describe a decarbonization policy, and let Sustain360 AI interpret the intent, map to SISEPUEDE parameters, and automatically run the simulation.",
       best: "AI-powered exploration",
       cta: "Describe & Simulate",
     },
@@ -304,8 +304,8 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
           <path d="M12 8v3M8.5 16.5l-2-3M15.5 16.5l2-3"/>
         </svg>
       ),
-      title: "National Emission Analysis",
-      desc: "Explore national emission baselines for Costa Rica and Mexico. View Scope 1 / 2 / 3 and ISO 14083 lifecycle stage breakdowns, MACC charts, Net Zero trajectory analysis, and investment plans across 8 standard decarbonization policies.",
+      title: "National Emissions Analysis",
+      desc: "Explore national emission baselines for the country. View Scope 1, 2 and 3 GHG emissions and ISO 14083 Lifecycle stage breakdowns and net-zero trajectory across sectors.",
       best: "Baseline & Net Zero planning",
       cta: "Explore Emissions",
     },
@@ -364,7 +364,7 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
       {/* Main content */}
       <div style={{
         flex: 1,
-        background: "#ffffff",
+        background: "linear-gradient(135deg, #0b1f35 0%, #0f2d4a 40%, #1a5272 75%, #1e7093 100%)",
         padding: "20px 32px 32px",
         textAlign: "center",
         position: "relative",
@@ -375,27 +375,24 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
         justifyContent: "center",
       }}>
         {/* Decorative rings */}
-        <div style={{ position: "absolute", top: -80, right: -80, width: 360, height: 360, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.05)", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", top: -40, right: -40, width: 220, height: 220, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.07)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", top: -80, right: -80, width: 360, height: 360, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.06)", pointerEvents: "none" }} />
         <div style={{ position: "absolute", bottom: -100, left: -60, width: 320, height: 320, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.04)", pointerEvents: "none" }} />
 
-        <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 1200 }}>
-          <div style={{ marginBottom: 14, textAlign: "center" }}>
-            <h1 style={{ fontSize: 40, fontWeight: 900, color: "#0f2d4a", margin: 0, letterSpacing: -0.8, lineHeight: 1.15 }}>
-              {country ? (
-                <>
-                  <span style={(country === "mexico_llm" || country === "ethiopia") ? { textDecoration: "underline", textUnderlineOffset: 5 } : {}}>
-                    {COUNTRY_LABELS[country]}
-                  </span>
-                  {" "}<span style={{ fontSize: 24, fontWeight: 900, color: "#94a3b8" }}>-</span>
-                </>
-              ) : "National"} Emission<br />
-              <span style={{ color: "#1e7093" }}>Decarbonization Modeling</span>
+        {/* Country hero */}
+        {country && (
+          <div style={{ marginBottom: 36, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+            <img
+              src={`https://flagcdn.com/w80/${country === "costa_rica" ? "cr" : country === "ethiopia" ? "et" : "mx"}.png`}
+              alt={COUNTRY_LABELS[country]}
+              style={{ height: 48, borderRadius: 6, boxShadow: "0 4px 16px rgba(0,0,0,0.35)" }}
+            />
+            <h1 style={{ fontSize: 44, fontWeight: 900, color: "#fff", margin: 0, letterSpacing: -1, lineHeight: 1.1 }}>
+              {COUNTRY_LABELS[country]}
             </h1>
           </div>
-          <p style={{ fontSize: 15.5, color: "#64748b", lineHeight: 1.8, maxWidth: 500, margin: "0 auto 32px" }}>
-            Design, simulate, and evaluate national transport decarbonization strategies with AI-powered climate impact insights. Powered by Sustain360.ai
-          </p>
+        )}
+
+        <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 1200 }}>
 
 
           {/* ?????? Cards inside hero ?????? */}
@@ -534,8 +531,8 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
           </div>
 
           {/* Footer note */}
-          <div style={{ marginTop: 36, fontSize: 11.5, color: "rgba(15,45,74,0.4)" }}>
-            Powered by <strong style={{ color: "#1e7093" }}>Sustain360.ai</strong>
+          <div style={{ marginTop: 36, fontSize: 11.5, color: "rgba(255,255,255,0.3)" }}>
+            Powered by <strong style={{ color: "rgba(255,255,255,0.6)" }}>Sustain360.ai</strong>
           </div>
         </div>
       </div>
@@ -1239,8 +1236,8 @@ export default function App() {
                       { id: "costa_rica", label: "Costa Rica", flagCode: "cr" },
                       { id: "mexico",     label: "Mexico",     flagCode: "mx" },
                       { id: "ethiopia",   label: "Ethiopia",   flagCode: "et" },
-                      { id: "mexico_llm", label: "Mexico", flagCode: "mx" },
-                    ].map(r => {
+                      { id: "mexico_llm", label: "Mexico",     flagCode: "mx" },
+                    ].filter(r => r.id === selectedCountry).map(r => {
                       const active = region === r.id;
                       return (
                         <button key={r.id} onClick={() => { setRegion(r.id); setResult(null); setError(null); }} style={{
@@ -1334,7 +1331,7 @@ export default function App() {
                     { id: "costa_rica", label: "Costa Rica", flagCode: "cr" },
                     { id: "mexico",     label: "Mexico",     flagCode: "mx" },
                     { id: "ethiopia",   label: "Ethiopia",   flagCode: "et" },
-                  ].map(r => {
+                  ].filter(r => r.id === selectedCountry).map(r => {
                     const active = region === r.id;
                     return (
                       <button key={r.id} onClick={() => { setRegion(r.id); setResult(null); setError(null); }} style={{
@@ -1462,7 +1459,7 @@ export default function App() {
                         background: RISK_BG[r.level], border: `1px solid ${RISK_COLOR[r.level]}40`,
                         color: RISK_COLOR[r.level], borderRadius: 20, padding: "4px 11px", fontSize: 12, fontWeight: 600,
                       }}>
-                        <span style={{ fontSize: 8 }}>???</span> {r.label}
+                        {r.label}
                         <span style={{ fontSize: 9, fontWeight: 800, background: RISK_COLOR[r.level] + "20", padding: "1px 5px", borderRadius: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>{r.level}</span>
                       </span>
                     ))}
