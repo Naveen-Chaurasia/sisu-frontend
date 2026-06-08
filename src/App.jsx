@@ -283,20 +283,6 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
       cta: "Configure & Simulate",
     },
     {
-      id: "natural",
-      icon: (
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-          <line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="13" y2="14"/>
-        </svg>
-      ),
-      title: "Conversational Modeling",
-      desc: "Describe a decarbonization policy, and let Sustain360 AI interpret the intent, map to SISEPUEDE parameters, and automatically run the simulation.",
-      best: "AI-powered exploration",
-      cta: "Describe & Simulate",
-    },
-    // { id: "emission_iq", hidden: true },
-    {
       id: "emissions_v2",
       icon: (
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
@@ -308,6 +294,20 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
       desc: "Explore national emission baselines for the country. View Scope 1, 2 and 3 GHG emissions and ISO 14083 Lifecycle stage breakdowns and net-zero trajectory across sectors.",
       best: "Baseline & Net Zero planning",
       cta: "Explore Emissions",
+    },
+    // { id: "emission_iq", hidden: true },
+    {
+      id: "natural",
+      icon: (
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+          <line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="13" y2="14"/>
+        </svg>
+      ),
+      title: "Conversational Modeling",
+      desc: "Describe a decarbonization policy, and let Sustain360 AI interpret the intent, map to SISEPUEDE parameters, and automatically run the simulation.",
+      best: "AI-powered exploration",
+      cta: "Describe & Simulate",
     },
   ];
 
@@ -1452,18 +1452,6 @@ export default function App() {
               {risks.length > 0 && (
                 <div style={{ marginBottom: 16 }}>
                   <div style={lbl}>Key Risks</div>
-                  <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-                    {risks.map((r, i) => (
-                      <span key={i} style={{
-                        display: "inline-flex", alignItems: "center", gap: 5,
-                        background: RISK_BG[r.level], border: `1px solid ${RISK_COLOR[r.level]}40`,
-                        color: RISK_COLOR[r.level], borderRadius: 20, padding: "4px 11px", fontSize: 12, fontWeight: 600,
-                      }}>
-                        {r.label}
-                        <span style={{ fontSize: 9, fontWeight: 800, background: RISK_COLOR[r.level] + "20", padding: "1px 5px", borderRadius: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>{r.level}</span>
-                      </span>
-                    ))}
-                  </div>
                 </div>
               )}
 
