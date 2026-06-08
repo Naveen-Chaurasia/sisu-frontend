@@ -21,10 +21,10 @@ const SECTOR_COLORS = {
 };
 const SECTOR_LABELS = {
   transport:   "Transport",
-  agriculture: "Agriculture (proxy)",
-  energy:      "Energy (proxy)",
-  waste:       "Waste",
-  industrial:  "Industrial",
+  agriculture: "Agriculture & Land Use",
+  energy:      "Energy & Buildings",
+  waste:       "Waste & Circular Economy",
+  industrial:  "Industrial Processes",
 };
 // Sector SVG icons from Icons.jsx
 

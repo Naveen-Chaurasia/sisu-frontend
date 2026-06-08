@@ -41,10 +41,10 @@ const SECTOR_COLORS = {
   industrial:  "#ef4444",
 };
 const SECTOR_LABELS = {
-  agriculture: "Agriculture",
-  energy:      "Energy",
-  waste:       "Waste",
-  industrial:  "Industrial",
+  agriculture: "Agriculture & Land Use",
+  energy:      "Energy & Buildings",
+  waste:       "Waste & Circular Economy",
+  industrial:  "Industrial Processes",
 };
 
 const PROXY_SECTORS = new Set(["energy", "agriculture"]);
