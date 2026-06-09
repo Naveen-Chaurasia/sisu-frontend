@@ -401,7 +401,7 @@ function Welcome({ user, onSelect, onLogout, onBack, country }) {
               const isEmissions = m.id === "emissions_v2";
               const isIQ = m.id === "emission_iq";
               const isGreyedOut = (m.id === "structured" || m.id === "natural")
-                && (country === "ethiopia" || country === "mexico_llm");
+                && (country === "ethiopia" || country === "mexico" || country === "mexico_llm");
               const cardStyle = {
                 background: isIQ
                   ? "linear-gradient(135deg, #1a0e00 0%, #2d1a00 40%, #4a2f00 75%, #6b4400 100%)"
@@ -1032,7 +1032,7 @@ export default function App() {
     try {
       const resp = await fetch("/api/run-policy", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: buildDescription(p), region }),
+        body: JSON.stringify({ description: buildDescription(p), region, target_year: p.year, magnitude: p.magnitude / 100 }),
       });
       if (!resp.ok) { const e = await resp.json().catch(() => ({ detail: resp.statusText })); throw new Error(e.detail || "Request failed"); }
       setResult(await resp.json());
