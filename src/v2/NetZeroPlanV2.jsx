@@ -13,14 +13,12 @@ import {
 const G = "radial-gradient(circle at 17.9167% 91.6667%, rgb(30,112,147) 0%, 17.5%, rgb(26,101,133) 100%)";
 
 const SECTOR_COLORS = {
-  transport:   "#1e7093",
   agriculture: "#84cc16",
   energy:      "#f59e0b",
   waste:       "#8b5cf6",
   industrial:  "#ef4444",
 };
 const SECTOR_LABELS = {
-  transport:   "Transport",
   agriculture: "Agriculture & Land Use",
   energy:      "Energy & Buildings",
   waste:       "Waste & Circular Economy",
@@ -117,7 +115,7 @@ export default function NetZeroPlanV2({ region, gas, unit, enabledSectors, onTog
         pols.forEach(p => {
           initCosts[p.id]   = p.default_capex_per_tco2 ?? 50;
           // Respect whatever sectors the user already has toggled
-          initEnabled[p.id] = ["transport", "agriculture"].includes(p.sector || "transport");
+          initEnabled[p.id] = ["agriculture"].includes(p.sector || "agriculture");
         });
         setCosts(initCosts);
         setEnabled(initEnabled);

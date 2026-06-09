@@ -4,7 +4,7 @@ import EmissionsTabV2  from "./EmissionsTabV2";
 import SimulationTabV2 from "./SimulationTabV2";
 import NetZeroPlanV2   from "./NetZeroPlanV2";
 import NationalEmissionIQ from "../NationalEmissionIQ";
-import { fetchSectors, fetchSectorPolicies, fetchSectorBaseline } from "./api";
+import { fetchSectors, fetchSectorPolicies, fetchSectorBaseline, runSectorBatch } from "./api";
 import { ResponsiveSankey } from "@nivo/sankey";
 import {
   IconBarChart, IconFlask, IconTarget,
@@ -256,15 +256,28 @@ export default function AppV2({ user, onBack, onLogout, initialRegion = "ethiopi
     setSimPolLoading(true);
     setSimPolicies([]);
     setSimPolicyId("");
-    fetchSectorPolicies(simSector)
-      .then(d => {
-        const pols = (d.policies || []).slice().sort((a, b) => (b.magnitude || 0) - (a.magnitude || 0));
+
+    // Fetch policy list and run batch simultaneously.
+    // Filter dropdown to only show policies with CO2 reduction > 0
+    // for the current country + sector.
+    Promise.all([
+      fetchSectorPolicies(simSector),
+      runSectorBatch(simSector, region, gas).catch(() => null),
+    ])
+      .then(([polData, batchData]) => {
+        let pols = (polData.policies || []).slice().sort((a, b) => (b.magnitude || 0) - (a.magnitude || 0));
+        if (batchData?.results) {
+          pols = pols.filter(p => {
+            const r = batchData.results[p.id];
+            return r && (r.final_reduction_pct > 0 || r.final_abatement_tonnes > 0);
+          });
+        }
         setSimPolicies(pols);
         if (pols.length > 0) setSimPolicyId(pols[0].id);
       })
       .catch(() => {})
       .finally(() => setSimPolLoading(false));
-  }, [simSector]);
+  }, [simSector, region, gas]);
 
   const unit = gas === "co2" ? "t CO₂" : gas === "ch4" ? "t CH₄" : gas === "n2o" ? "t N₂O" : "t CO₂e";
 
