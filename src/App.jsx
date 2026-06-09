@@ -1004,7 +1004,7 @@ export default function App() {
       .then(data => {
         const avail = data.available || [];
         setAvailableGases(avail);
-        setSelectedGas(prev => avail.includes(prev) ? prev : (avail[0] || null));
+        setSelectedGas(prev => avail.includes(prev) ? prev : (avail.includes("co2") ? "co2" : avail[0] || null));
       })
       .catch(() => {});
   }, [region]);
